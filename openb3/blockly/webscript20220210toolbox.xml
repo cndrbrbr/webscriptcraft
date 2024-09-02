@@ -1,0 +1,37 @@
+<xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
+  <category name="scriptcraft" colour="#a55b80">
+    <block type="drone">
+      <field name="NAME">var drone</field>
+    </block>
+    <block type="func">
+      <field name="funcname">draw</field>
+    </block>
+    <block type="init_drone"></block>
+    <block type="boxcmd">
+      <field name="NAME">quarz</field>
+      <field name="width">2</field>
+      <field name="height">2</field>
+      <field name="depth">2</field>
+    </block>
+    <block type="move">
+      <field name="wayto">up</field>
+      <field name="amount">1</field>
+    </block>
+    <block type="funcend"></block>
+    <block type="exports">
+      <field name="exportname">draw</field>
+    </block>
+    <block type="functioncall">
+      <field name="funcname">draw1</field>
+      <next>
+        <block type="box0">
+          <field name="Boxtype">OPTIONNAME</field>
+          <field name="NAME">Red</field>
+        </block>
+      </next>
+    </block>
+    <block type="movevar">
+      <field name="Movtype">OPTIONNAME</field>
+    </block>
+  </category>
+</xml>
