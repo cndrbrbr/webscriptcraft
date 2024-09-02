@@ -1,0 +1,86 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="drone" id="}g:q^Jz7~p;GZpMF$;8t" x="16" y="10">
+    <field name="NAME">var drone</field>
+    <next>
+      <block type="funcbegin" id="tsCGOm@Z),xlodl{]4OZ">
+        <field name="funcname">BenKarambaAusrufezeichenLinie</field>
+        <next>
+          <block type="init_drone" id="Sh%!bZ5@cxuOoSgTWQwi">
+            <next>
+              <block type="controls_repeat_ext" id="(B@H|yuLEDL%1nLm0zT2">
+                <value name="TIMES">
+                  <shadow type="math_number" id="|)K/{*y4rPapQeG#h5{d">
+                    <field name="NUM">10</field>
+                  </shadow>
+                </value>
+                <statement name="DO">
+                  <block type="boxcmd" id="_u84bXLAU?eAoqHAcq4v">
+                    <field name="NAME">wool.lime</field>
+                    <field name="width">2</field>
+                    <field name="height">2</field>
+                    <field name="depth">2</field>
+                    <next>
+                      <block type="move" id="o/79`Q|c8IW:JGiVfaIk">
+                        <field name="wayto">up</field>
+                        <field name="amount">4</field>
+                        <next>
+                          <block type="boxcmd" id="s[~%GmF4+TeI3MzX`$~y">
+                            <field name="NAME">wool.lime</field>
+                            <field name="width">2</field>
+                            <field name="height">2</field>
+                            <field name="depth">2</field>
+                            <next>
+                              <block type="move" id="_825K(xfE[vCRtV.Kr4_">
+                                <field name="wayto">up</field>
+                                <field name="amount">2</field>
+                                <next>
+                                  <block type="boxcmd" id="kAtPl_yButWmM@{C5;9R">
+                                    <field name="NAME">wool.lime</field>
+                                    <field name="width">2</field>
+                                    <field name="height">2</field>
+                                    <field name="depth">2</field>
+                                    <next>
+                                      <block type="move" id="EqGVeme`2T(:RgjDG`Xw">
+                                        <field name="wayto">up</field>
+                                        <field name="amount">1</field>
+                                        <next>
+                                          <block type="move" id="BO8EEl;f6(Xs6M$LPa]M">
+                                            <field name="wayto">fwd</field>
+                                            <field name="amount">10</field>
+                                            <next>
+                                              <block type="move" id="sGa(Xzi4,X.JQY.=!?ES">
+                                                <field name="wayto">down</field>
+                                                <field name="amount">7</field>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+                <next>
+                  <block type="funcend" id="%^7T3@*yKb5w1rS*`zfx">
+                    <next>
+                      <block type="exports" id=":00mc]ly]V1H$)st5Z36">
+                        <field name="exportname">BenKarambaAusrufezeichenLinie</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>

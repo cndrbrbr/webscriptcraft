@@ -1,0 +1,31 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="drone" id="}g:q^Jz7~p;GZpMF$;8t" x="16" y="10">
+    <field name="NAME">var drone</field>
+    <next>
+      <block type="funcbegin" id="tsCGOm@Z),xlodl{]4OZ">
+        <field name="funcname">bauglass</field>
+        <next>
+          <block type="init_drone" id="Sh%!bZ5@cxuOoSgTWQwi">
+            <next>
+              <block type="boxcmd" id="_u84bXLAU?eAoqHAcq4v">
+                <field name="NAME">glass</field>
+                <field name="width">22</field>
+                <field name="height">20</field>
+                <field name="depth">37</field>
+                <next>
+                  <block type="funcend" id=":/#.1PPI3Y8V:^Y]DrRk">
+                    <next>
+                      <block type="exports" id="?~i1n5A:^D%arjkg~/MO">
+                        <field name="exportname">bauglass</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>
