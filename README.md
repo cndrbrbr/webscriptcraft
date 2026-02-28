@@ -17,7 +17,7 @@ Built in the tradition of [ScriptCraft by Walter Higgins](https://github.com/wal
 
 ```
 ┌──────────────────────────────┐     ┌─────────────────────┐
-│   Blockly Editor             │────▶│  Generated JS       │
+│   Blockly Editor             │────▶│  draw.js            │
 │  (drag & drop blocks)        │     │  function draw() {  │
 │                              │     │    drone.box(        │
 │  [function draw]             │     │      "DIRT",2,2,2); │
@@ -26,6 +26,7 @@ Built in the tradition of [ScriptCraft by Walter Higgins](https://github.com/wal
 │    [box DIAMOND 1×1×1]       │     │      "DIAMOND_BLOCK"│
 │  [end function]              │     │      ,1,1,1);       │
 │  [preview function draw]     │     │  };                 │
+│                              │     │  draw();  ← auto!   │
 └──────────────────────────────┘     └──────────┬──────────┘
                                                 │
                  ┌──────────────────────────────┘
@@ -100,17 +101,17 @@ Click **▶ 3D Vorschau** — the drone simulation runs in your browser and rend
 
 ### 3. Download the JavaScript
 
-Click **JavaScript ↓** — downloads a `.js` file.
+Click **JavaScript ↓** — downloads a `.js` file named after your function (e.g. `draw.js`).
 Copy it to your Minecraft server's scripts folder:
 
 ```
-/plugins/jsmn/scripts/myScript.js
+/plugins/jsmn/scripts/draw.js
 ```
 
-Then in Minecraft:
+The file already contains the function call at the bottom (`draw();`), so JSMN executes it automatically when the script loads. You can also re-run it any time with:
 
 ```
-/rs functionName
+/rs draw
 ```
 
 ### 4. Save & Load your work
@@ -165,8 +166,11 @@ end function
 
 ### `preview function`
 
-Marks which function the 3D preview should call.
-In Minecraft: use `/rs name` to run it.
+Marks the entry point of your program. Does two things:
+- Tells the **3D preview** which function to call
+- Adds `functionName();` at the end of the downloaded JS so JSMN runs it automatically
+
+The downloaded file is also **named after this function** (e.g. `draw.js`).
 
 ### `call`
 

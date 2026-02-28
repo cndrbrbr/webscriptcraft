@@ -147,12 +147,19 @@ Der Name der Funktion ist gleichzeitig der Befehl, den du in Minecraft eingibst.
 
 ### `preview function`
 
-Dieser Block steht **nach** `end function` und sagt der 3D-Vorschau, welche Funktion sie anzeigen soll.
+Dieser Block steht **nach** `end function` und macht zwei Dinge:
+
+1. Er sagt der **3D-Vorschau**, welche Funktion sie anzeigen soll.
+2. Er fügt am Ende des heruntergeladenen JavaScript-Codes den **Funktionsaufruf** ein (`turm();`), damit JSMN die Funktion automatisch ausführt.
+
+Außerdem wird die heruntergeladene Datei **nach der Funktion benannt** (z. B. `turm.js`).
 
 ```
 [ end function ]
 [ preview function  turm ]
 ```
+
+→ Erzeugt am Ende der Datei: `turm();`
 
 ---
 
@@ -416,22 +423,23 @@ Der aktuelle Arbeitsbereich wird dabei **ersetzt**.
 
 ### Schritte
 
-1. Klicke **JavaScript ↓** — eine `.js`-Datei wird heruntergeladen
-2. Kopiere die `.js`-Datei in `/plugins/jsmn/scripts/` auf dem Server
-3. Starte den Server neu (oder warte — Skripte werden automatisch neu geladen)
-4. Stehe in Minecraft an der Stelle, wo das Gebäude entstehen soll
-5. Gib ein:
+1. Klicke **JavaScript ↓** — eine `.js`-Datei wird heruntergeladen, benannt nach deiner Funktion (z. B. `haus.js`)
+2. Kopiere die Datei in `/plugins/jsmn/scripts/` auf dem Server
+3. Stehe in Minecraft an der Stelle, wo das Gebäude entstehen soll
+4. Gib ein:
 
 ```
-/rs funktionsname
+/rs haus
 ```
 
 Das Gebäude wird **ab deiner aktuellen Position** gebaut.
 
+> **Tipp:** Der `preview function`-Block fügt den Aufruf `haus();` automatisch ans Ende der Datei — JSMN führt deine Funktion sofort aus, wenn das Skript geladen wird.
+
 ### Beispiel
 
 ```javascript
-// jsmn_script.js — heruntergeladen aus der IDE
+// haus.js — heruntergeladen aus der IDE (Dateiname = Funktionsname)
 function haus() {
   drone.box("DIRT", 5, 1, 5);
   drone.up(1);
@@ -439,7 +447,7 @@ function haus() {
   drone.up(4);
   drone.box("QUARTZ_BLOCK", 5, 1, 5);
 };
-// run: haus
+haus();  // ← automatisch eingefügt vom "preview function"-Block
 ```
 
 Im Minecraft:
