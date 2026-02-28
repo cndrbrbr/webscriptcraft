@@ -271,12 +271,10 @@ function preview() {
 // ── Generate JS for JSMN — download ───────────────────────────────
 function showCode() {
   var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
-  var blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'jsmn_script.js';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  // Use the called function name (funcname();) as filename, fallback to 'jsmn_script'
+  var callMatch = code.match(/^(\w+)\(\);\s*$/m);
+  var filename  = (callMatch ? callMatch[1] : 'jsmn_script') + '.js';
+  _download(code, filename, 'text/plain');
 }
 
 // ── Save workspace as JSON (Blockly v12 native format) ────────────
