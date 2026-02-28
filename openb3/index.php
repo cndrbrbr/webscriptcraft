@@ -275,6 +275,7 @@ function showCode() {
   // Use the called function name (funcname();) as filename, fallback to 'jsmn_script'
   var callMatch = code.match(/^(\w+)\(\);\s*$/m);
   var filename  = (callMatch ? callMatch[1] : 'jsmn_script') + '.js';
+  code += 'player.sendMessage("Done!");\n';
   _download(code, filename, 'text/plain');
 }
 
