@@ -62,10 +62,10 @@ git clone https://github.com/cndrbrbr/webscriptcraft.git
 cd webscriptcraft/openb3
 # open index.php in a browser, or serve with Python:
 python3 -m http.server 8080
-# then open http://localhost:8080/test.html
+# then open http://localhost:8080   (or your server's IP)
 ```
 
-> `test.html` is a static version of `index.php` with PHP tags stripped — works with any HTTP server.
+> `index.html` is a static version of `index.php` with PHP tags stripped — works with any HTTP server and is served automatically as the directory default.
 
 ### Option B — PHP server (full features: server-side save/load)
 
