@@ -55,19 +55,50 @@ Built in the tradition of [ScriptCraft by Walter Higgins](https://github.com/wal
 
 ## Quick Start
 
-### Option A — Open directly in browser (no server)
+### Option A — HTTPS server (recommended for classroom use)
+
+Uses a self-signed certificate so browsers don't upgrade HTTP to HTTPS silently.
 
 ```bash
 git clone https://github.com/cndrbrbr/webscriptcraft.git
-cd webscriptcraft/openb3
-# open index.php in a browser, or serve with Python:
-python3 -m http.server 8080
-# then open http://localhost:8080   (or your server's IP)
+cd webscriptcraft
+
+# 1. Generate a self-signed SSL certificate (once)
+bash setup-ssl.sh
+
+# 2. Start the HTTPS server
+python3 serve-https.py
+
+# 3. Open in browser (accept the self-signed cert warning)
+#    https://localhost:4443   or   https://<your-server-ip>:4443
 ```
 
-> `index.html` is a static version of `index.php` with PHP tags stripped — works with any HTTP server and is served automatically as the directory default.
+> Browser will show a certificate warning — click **Advanced → Proceed** to continue.
+> The cert is valid for 10 years. Regenerate it any time with `bash setup-ssl.sh`.
 
-### Option B — PHP server (full features: server-side save/load)
+### Option B — Plain HTTP (local development only)
+
+```bash
+cd webscriptcraft/openb3
+python3 -m http.server 8080
+# open http://localhost:8080
+```
+
+> Works locally but browsers may block access from other machines via plain HTTP.
+
+### Option C — nginx with HTTPS (if nginx is installed)
+
+```bash
+# Generate cert first
+bash setup-ssl.sh
+
+# Install nginx config (adjust paths inside the file first)
+sudo cp nginx/jsmn-ide.conf /etc/nginx/sites-available/jsmn-ide
+sudo ln -s /etc/nginx/sites-available/jsmn-ide /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Option D — PHP server (full features: server-side save/load)
 
 Requires PHP 7+ and a web server (Apache/Nginx).
 
