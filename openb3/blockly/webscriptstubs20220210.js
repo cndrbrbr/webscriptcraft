@@ -1,97 +1,72 @@
-Blockly.JavaScript['boxcmd'] = function(block) {
-  var dropdown_name = block.getFieldValue('NAME');
-  var number_width = block.getFieldValue('width');
-  var number_height = block.getFieldValue('height');
-  var number_depth = block.getFieldValue('depth');
-  var value_blocks = Blockly.JavaScript.valueToCode(block, 'blocks', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var start; 
-  start = 'drone.box(blocks.';
-  var code = start +dropdown_name+','+number_width+','+ number_height +','+ number_depth +');\n';
-  return code;
+// (c)2022 cndrbrbr — updated 2026 for JSMN plugin + Blockly v12
+// Generators use Blockly.JavaScript.forBlock (Blockly v10+ API)
+
+// In Blockly v12 browser/CDN mode, Order constants live on window.javascript.Order.
+// Fallback to numeric literals (ORDER_ATOMIC = 0, ORDER_NONE = 99) for safety.
+var _ORDER_ATOMIC = (typeof javascript !== 'undefined' && javascript.Order)
+  ? javascript.Order.ATOMIC
+  : 0;  // ORDER_ATOMIC = 0 across all Blockly versions
+
+Blockly.JavaScript.forBlock['boxcmd'] = function(block) {
+  var mat    = block.getFieldValue('NAME');
+  var width  = Math.floor(block.getFieldValue('width'));
+  var height = Math.floor(block.getFieldValue('height'));
+  var depth  = Math.floor(block.getFieldValue('depth'));
+  return 'drone.box("' + mat + '",' + width + ',' + height + ',' + depth + ');\n';
 };
 
-Blockly.JavaScript['drone'] = function(block) {
-  // TODO: Assemble JavaScript into code variable.
-  var code =  'var drone;\n';
-  return code;
+Blockly.JavaScript.forBlock['box0'] = function(block) {
+  var type   = block.getFieldValue('Boxtype');
+  var mat    = block.getFieldValue('NAME');
+  var valueW = Blockly.JavaScript.valueToCode(block, 'X', _ORDER_ATOMIC) || '1';
+  var valueH = Blockly.JavaScript.valueToCode(block, 'Z', _ORDER_ATOMIC) || '1';
+  var valueD = Blockly.JavaScript.valueToCode(block, 'Y', _ORDER_ATOMIC) || '1';
+  return 'drone.' + type + '("' + mat + '",' + valueW + ',' + valueH + ',' + valueD + ');\n';
 };
 
-Blockly.JavaScript['move'] = function(block) {
-  var dropdown_wayto = block.getFieldValue('wayto');
-  var number_amount = block.getFieldValue('amount');
-  var value_moveparam = Blockly.JavaScript.valueToCode(block, 'moveparam', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var start;
-  start = 'drone.';
-  var code = start +dropdown_wayto+'('+number_amount+');\n';
-  return code;
+Blockly.JavaScript.forBlock['move'] = function(block) {
+  var dir    = block.getFieldValue('wayto');
+  var amount = Math.floor(block.getFieldValue('amount'));
+  return 'drone.' + dir + '(' + amount + ');\n';
 };
 
-Blockly.JavaScript['func'] = function(block) {
-  var text_funcname = block.getFieldValue('funcname');
-  var value_functionname = Blockly.JavaScript.valueToCode(block, 'functionname', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = 'function '+text_funcname+'() {\n';
-  return code;
+Blockly.JavaScript.forBlock['movevar'] = function(block) {
+  var dir    = block.getFieldValue('Movtype');
+  var amount = Blockly.JavaScript.valueToCode(block, 'Amount', _ORDER_ATOMIC) || '1';
+  return 'drone.' + dir + '(Math.floor(' + amount + '));\n';
 };
 
-Blockly.JavaScript['funcbegin'] = function(block) {
-  var text_funcname = block.getFieldValue('funcname');
-  var value_functionname = Blockly.JavaScript.valueToCode(block, 'functionname', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = 'function '+text_funcname+'() {\n';
-  return code;
+Blockly.JavaScript.forBlock['funcbegin'] = function(block) {
+  var name = block.getFieldValue('funcname');
+  return 'function ' + name + '() {\n';
 };
 
-Blockly.JavaScript['funcend'] = function(block) {
-  var value_funcend = Blockly.JavaScript.valueToCode(block, 'funcend', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = '};\n';
-  return code;
+Blockly.JavaScript.forBlock['func'] = function(block) {
+  var name = block.getFieldValue('funcname');
+  return 'function ' + name + '() {\n';
 };
 
-Blockly.JavaScript['exports'] = function(block) {
-  var text_exportname = block.getFieldValue('exportname');
-  var value_exports = Blockly.JavaScript.valueToCode(block, 'exports', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = ' exports.' + text_exportname + ' = '+ text_exportname +';\n';
-  return code;
+Blockly.JavaScript.forBlock['funcend'] = function(block) {
+  return '};\n';
 };
 
-Blockly.JavaScript['functioncall'] = function(block) {
-  var text_funcname = block.getFieldValue('funcname');
-  var value_name = Blockly.JavaScript.valueToCode(block, 'NAME', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var code = text_funcname+'();\n';
-  return code;
+Blockly.JavaScript.forBlock['exports'] = function(block) {
+  var name = block.getFieldValue('exportname');
+  // Comment used by 3D preview to find the entry point.
+  // In Minecraft: /rs <name>
+  return '// run: ' + name + '\n';
 };
 
-Blockly.JavaScript['init_drone'] = function(block) {
-  // TODO: Assemble JavaScript into code variable.
-  var code = 'drone = box(blocks.air,1,1,1);\n';
-  return code;
+Blockly.JavaScript.forBlock['functioncall'] = function(block) {
+  var name = block.getFieldValue('funcname');
+  return name + '();\n';
 };
 
-Blockly.JavaScript['box0'] = function(block) {
-  var dropdown_boxtype = block.getFieldValue('Boxtype');
-  var dropdown_name = block.getFieldValue('NAME');
-  var value_x = Blockly.JavaScript.valueToCode(block, 'X', Blockly.JavaScript.ORDER_ATOMIC);
-  var value_z = Blockly.JavaScript.valueToCode(block, 'Z', Blockly.JavaScript.ORDER_ATOMIC);
-  var value_y = Blockly.JavaScript.valueToCode(block, 'Y', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var start; 
-  start = 'drone.'+dropdown_boxtype+'(blocks.';
-  var code = start +dropdown_name+','+value_x+','+ value_z +','+ value_y +');\n';
-  return code;
+// Legacy blocks — generate nothing so old XML still works
+Blockly.JavaScript.forBlock['drone'] = function(block) {
+  return '';
 };
 
-Blockly.JavaScript['movevar'] = function(block) {
-  var dropdown_movtype = block.getFieldValue('Movtype');
-  var value_amount = Blockly.JavaScript.valueToCode(block, 'Amount', Blockly.JavaScript.ORDER_ATOMIC);
-  // TODO: Assemble JavaScript into code variable.
-  var start;
-  start = 'drone.';
-  var code = start +dropdown_movtype+'('+value_amount+');\n';
-  return code;
+Blockly.JavaScript.forBlock['init_drone'] = function(block) {
+  return '';
 };

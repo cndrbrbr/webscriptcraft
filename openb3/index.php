@@ -1,802 +1,444 @@
-
 <?php
-// (c)2022 cndrbrbr 
+// (c)2022 cndrbrbr — updated 2026 for JSMN plugin + Blockly v12
 session_start();
-
 ?>
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" >
+<!DOCTYPE html>
+<html lang="de">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<title>Meckminecraft - Programmieren in Minecraft : Primer for programming</title>
+  <meta charset="UTF-8">
+  <title>JSMN IDE — JavaScript Minecraft Blocks</title>
 
- <script src="blockly/google-blockly-02a5712/blockly_compressed.js"></script>
-  <script src="blockly/google-blockly-02a5712/blocks_compressed.js"></script>
-  <script src="blockly/google-blockly-02a5712/javascript_compressed.js"></script>
-  <script src="blockly/google-blockly-02a5712/msg/js/en.js"></script>
-  <script src="blockly/webscript20220210.js"></script> 
-  <script src="blockly/webscriptstubs20220210.js"></script> 
+  <!-- Blockly v12 (latest) via CDN -->
+  <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/msg/en.js"></script>
 
-  <script language="Javascript" type="text/javascript">
+  <!-- Three.js r140 + OrbitControls (client-side 3D preview) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/controls/OrbitControls.js"></script>
 
-		// initialisation
-		
-		var dlm = '!^!';
+  <!-- JSMN custom blocks and generators -->
+  <script src="blockly/webscript20220210.js"></script>
+  <script src="blockly/webscriptstubs20220210.js"></script>
 
-
-		// =================================================================================================
-		// SAVE
-		// =================================================================================================
-		
-		function save_localfile(text)
-		{
-
-            		var blob = new Blob([text],{ type: "text/plain;charset=utf-8" });
-            		//saveAs(blob,filename + ".js");
-			//var aFileParts = ['<a id="a"><b id="b">hey!</b></a>'];
-			//var oMyBlob = new Blob(aFileParts, {type : 'text/html'}); // the blob
-			window.open(URL.createObjectURL(blob));
-
-        
-		}
-		
-		// Save Code to Server 
- 		function Upsave(text){
-			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.open("POST","callingtext.php",true);
-			xmlhttp.setRequestHeader("Content-type", "text/text");
-			xmlhttp.send(text);
-			xmlhttp.onreadystatechange = function () {
-				if (xmlhttp.readyState === XMLHttpRequest.DONE) {
-				  if (xmlhttp.status === 200) {				
-					
-					var type = xmlhttp.getResponseHeader('Content-Type');
-					
-					if (type.indexOf("text") !== 1) {
-						//alert (xmlhttp.responseText);
-						var ergebnis = xmlhttp.responseText;
-						var myStringArray = ergebnis.split("!^!");
-						//var arrayLength = myStringArray.length;
-						editAreaLoader.setValue("example_3", myStringArray[2]);
-						editAreaLoader.setValue("help", myStringArray[1]);
-						
-					}
-				  }
-				}
-			}		
-		}
-		
-
-
-
-		function cleanupdiv ()
-		{
-			var modal = document.getElementById("drin");
-			removeAllChildNodes(modal);
-		}
-		function removeAllChildNodes(node) {
-			i = (typeof(node) == "object") ? node : document.getElementById(node);
-
-			while (i.hasChildNodes()) {
-				i.removeChild(i.firstChild);
-			}
-		}		
-		
-
-
-
-	// =================================================================================================
-	// login und logout
-	// =================================================================================================
-	// 
-	
-	function goto_profile()
-	{
-		document.location = 'usermanager/profile.php';
-	}
-	function goto_js()
-	{
-		document.location = './index.php';
-	}
-	
-
-
-	// =================================================================================================
-	// Aufruf erzeugen
-	// =================================================================================================
-	
-	function createCallingText()
-	{
-		var serverAd = document.getElementById("lbServerAd").innerHTML;
-		var url = "./callingtext.php";
-		var text = editAreaLoader.getValue("example_3");
-		alert (text);
-		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.open("POST",url,true);
-		xmlhttp.setRequestHeader("Content-type", "text/text");
-		xmlhttp.send(text);
-	}
-
-	// =================================================================================================
-	// Check Syntax
-	// =================================================================================================
-	function do_blockly ()
-	{
-		var elem = document.getElementById('jscript');
-		elem.style.visibility = 'hidden'; 
-		elem = document.getElementById('blockly');
-		elem.style.visibility = 'visible'; 
-
-	}
-	function do_javascript	()
-	{
-		var elem = document.getElementById('jscript');
-		elem.style.visibility = 'visible'; // hide, but lets the element keep its size
-		elem = document.getElementById('blockly');
-		elem.style.visibility = 'hidden'; 
-
-	}
-
-
-	async function fetchHtmlAsText(url) {
-	    return await (await fetch(url)).text();
-	}
-
-	// this is your `load_home() function`
-	async function loadHome() {
-	    const contentDiv = document.getElementById("hilfe");
-	    contentDiv.innerHTML = await fetchHtmlAsText("https://minecraft-ag.de/wiki/index.php?title=Move");
-	}
-
-	function load_home() {
-	     document.getElementById("hilfe").innerHTML='<object type="text/html" data="https://minecraft-ag.de/wiki/index.php?title=Blockly_-_Lexikon" width="850" height="500"></object>';
-	}
-	function gross() {
-	   document.getElementById("hilfe").style.height="500px";
-	  
-	}
-	function klein() {
-	   document.getElementById("hilfe").style.height="100px";
-	}
-	function saveB() {
-
-    var xmlDom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
-    var xmlText = Blockly.Xml.domToPrettyText(xmlDom);
-    var xmlhttp = new XMLHttpRequest();
-		
-		xmlhttp.open("POST","save.php",true);
-		xmlhttp.setRequestHeader("Content-type", "text/text");
-		xmlhttp.send(xmlText);
-    xmlhttp.onreadystatechange = function () {
-      if (xmlhttp.readyState === XMLHttpRequest.DONE) {
-         if (xmlhttp.status === 200) {	
-           var result = xmlhttp.responseText;
-           alert (result + ".xml gespeichert.");
-          }
-      }
+  <style>
+    body {
+      background-image: url('cobble.png');
+      font-family: Arial, Helvetica, sans-serif;
     }
+    .button {
+      background-color: #003300;
+      border: 2px solid #008000;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 8px;
+      display: inline-block;
+      font-size: 16px;
+      font-family: Lucida Console, Courier, monospace;
+      cursor: pointer;
+    }
+    .button:hover { background-color: #006600; }
+    .legend {
+      font-family: Lucida Console, Courier, monospace;
+      background-color: #003300;
+      padding: 10px 24px;
+      border-radius: 8px;
+      color: white;
+      border: 2px solid #008000;
+    }
+    #x3ddiv { background: #87CEEB; border: 2px solid #008000; border-radius: 4px; }
+#errorbanner {
+      display: none;
+      background: #7a0000; color: white; padding: 8px 16px;
+      border-radius: 4px; margin: 4px 0; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
 
-	}
+<!-- Hidden file inputs for local XML load -->
+<input type="file" id="fileInputLoad"  accept=".json,.xml" style="display:none" onchange="onFileLoad(this, false)">
+<input type="file" id="fileInputAdd"   accept=".json,.xml" style="display:none" onchange="onFileLoad(this, true)"  multiple>
 
-// global
+<legend class="legend"><b>JSMN IDE — Minecraft JavaScript mit Blöcken programmieren</b></legend>
 
-var isAdditional = false;
+<fieldset style="background-image: url('grass.png');">
+  <div style="margin-bottom:6px;">
+    <input type="button" class="button" onclick="preview()"                         value="▶ 3D Vorschau" />
+    <input type="button" class="button" onclick="saveXmlLocal()"                    value="💾 XML speichern" />
+    <input type="button" class="button" onclick="document.getElementById('fileInputLoad').click()" value="📂 XML laden" />
+    <input type="button" class="button" onclick="document.getElementById('fileInputAdd').click()"  value="➕ XML hinzuladen" />
+    <input type="button" class="button" onclick="showCode()"                        value="JavaScript ↓" />
+  </div>
+  <div id="errorbanner"></div>
 
-function loadF ()
-{
-  isAdditional = true;
-  showFilesx();
+  <table>
+    <tr>
+      <td valign="top">
+        <div id="blocklyDiv" style="height:600px; width:850px;"></div>
+      </td>
+      <td valign="top">
+        <div id="x3ddiv" style="height:600px; width:700px;"></div>
+      </td>
+    </tr>
+  </table>
+</fieldset>
+
+
+<!-- ================================================================
+     CLIENT-SIDE DRONE SIMULATOR + THREE.JS 3D PREVIEW
+     ================================================================ -->
+<script>
+
+// ── Block colours (approximate Minecraft palette) ─────────────────
+var BLOCK_COLORS = {
+  AIR:          null,
+  DIRT:         0x8B5E3C,
+  GRASS_BLOCK:  0x5AA02C,
+  STONE:        0x7F7F7F,
+  COBBLESTONE:  0x6E6E6E,
+  QUARTZ_BLOCK: 0xEFEDE3,
+  SANDSTONE:    0xD3C57A,
+  DIORITE:      0xBCBAB4,
+  ANDESITE:     0x7E7E7E,
+  GRANITE:      0xA76748,
+  GLASS:        0xADD8FF,
+  ICE:          0xA0C4FF,
+  SNOW_BLOCK:   0xF0F0F8,
+  GRAVEL:       0x9A9A9A,
+  GLOWSTONE:    0xFFC060,
+  BEACON:       0x00E5CC,
+  OBSIDIAN:     0x1A0D2E,
+  DIAMOND_BLOCK:0x4AEEE4,
+  EMERALD_BLOCK:0x17DD62,
+  IRON_BLOCK:   0xD8D8D8,
+  GOLD_BLOCK:   0xFAD335,
+  SAND:         0xDBC87A,
+  BEDROCK:      0x444444,
+  END_STONE:    0xD5CA8D,
+  RED_WOOL:     0xA12722,
+  ORANGE_WOOL:  0xF07613,
+  YELLOW_WOOL:  0xF8C12F,
+  LIME_WOOL:    0x5EA918,
+  GREEN_WOOL:   0x364B18,
+  BLUE_WOOL:    0x253192,
+  PURPLE_WOOL:  0x641F9C,
+  MAGENTA_WOOL: 0xBE49C9,
+  PINK_WOOL:    0xD98199,
+  WHITE_WOOL:   0xE9ECEC,
+};
+
+// ── Browser-side Drone simulator (mirrors Drones.js logic) ────────
+function DronePreview() {
+  this.x = 0; this.y = 0; this.z = 0;
+  this.dir = 0; // 0=forward(-z), 1=right(+x), 2=back(+z), 3=left(-x)
+  this.blocks = [];
+}
+DronePreview.prototype._add = function(mat, px, py, pz) {
+  if (mat === 'AIR' || mat === 'air') return;
+  this.blocks.push({ x: Math.floor(px), y: Math.floor(py), z: Math.floor(pz), material: mat });
+};
+DronePreview.prototype.box = function(mat, w, h, d) {
+  w=Math.floor(w||1); h=Math.floor(h||1); d=Math.floor(d||1);
+  for (var k=0; k<h; k++)
+    for (var j=0; j<w; j++)
+      for (var i=0; i<d; i++) {
+        if      (this.dir===0) this._add(mat, this.x+j, this.y+k, this.z-i);
+        else if (this.dir===1) this._add(mat, this.x+i, this.y+k, this.z+j);
+        else if (this.dir===2) this._add(mat, this.x+j, this.y+k, this.z+i);
+        else                   this._add(mat, this.x-i, this.y+k, this.z+j);
+      }
+};
+DronePreview.prototype.box0 = function(mat, w, h, d) {
+  w=Math.floor(w||1); h=Math.floor(h||1); d=Math.floor(d||1);
+  for (var k=0; k<h; k++)
+    for (var j=0; j<w; j++)
+      for (var i=0; i<d; i++) {
+        if ((i===0)||(i===d-1)||(j===0)||(j===w-1)) {
+          if      (this.dir===0) this._add(mat, this.x+j, this.y+k, this.z-i);
+          else if (this.dir===1) this._add(mat, this.x+i, this.y+k, this.z+j);
+          else if (this.dir===2) this._add(mat, this.x+j, this.y+k, this.z+i);
+          else                   this._add(mat, this.x-i, this.y+k, this.z+j);
+        }
+      }
+};
+DronePreview.prototype.fwd   = function(n) { n=Math.floor(n||1); if(this.dir===0)this.z-=n; else if(this.dir===1)this.x+=n; else if(this.dir===2)this.z+=n; else this.x-=n; };
+DronePreview.prototype.back  = function(n) { n=Math.floor(n||1); if(this.dir===0)this.z+=n; else if(this.dir===1)this.x-=n; else if(this.dir===2)this.z-=n; else this.x+=n; };
+DronePreview.prototype.up    = function(n) { this.y+=Math.floor(n||1); };
+DronePreview.prototype.down  = function(n) { this.y-=Math.floor(n||1); };
+DronePreview.prototype.right = function(n) { n=Math.floor(n||1); if(this.dir===0)this.x+=n; else if(this.dir===1)this.z+=n; else if(this.dir===2)this.x-=n; else this.z-=n; };
+DronePreview.prototype.left  = function(n) { n=Math.floor(n||1); if(this.dir===0)this.x-=n; else if(this.dir===1)this.z-=n; else if(this.dir===2)this.x+=n; else this.z+=n; };
+DronePreview.prototype.turn  = function(n) { this.dir=(this.dir+Math.floor(n||1))%4; };
+
+// ── Three.js scene globals ─────────────────────────────────────────
+var _scene, _camera, _renderer, _controls, _animId;
+
+function _initThree() {
+  var container = document.getElementById('x3ddiv');
+  container.innerHTML = '';
+
+  _scene = new THREE.Scene();
+  _scene.background = new THREE.Color(0x87CEEB);
+
+  var w = container.clientWidth, h = container.clientHeight;
+  _camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 2000);
+
+  _renderer = new THREE.WebGLRenderer({ antialias: true });
+  _renderer.setSize(w, h);
+  container.appendChild(_renderer.domElement);
+
+  _scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(20, 40, 20);
+  _scene.add(sun);
+
+  _controls = new THREE.OrbitControls(_camera, _renderer.domElement);
+  _controls.enableDamping = true;
+  _controls.dampingFactor = 0.08;
+
+  // ground grid
+  _scene.add(new THREE.GridHelper(100, 100, 0x888888, 0xcccccc));
+
+  if (_animId) cancelAnimationFrame(_animId);
+  (function loop() {
+    _animId = requestAnimationFrame(loop);
+    _controls.update();
+    _renderer.render(_scene, _camera);
+  })();
 }
 
+function _renderBlocks(blocks) {
+  if (blocks.length === 0) {
+    document.getElementById('errorbanner').style.display = 'block';
+    document.getElementById('errorbanner').textContent = 'Keine Blöcke gebaut — prüfe, ob die Funktion aufgerufen wird.';
+    return;
+  }
 
-  function loadB ()
-	{
-    isAdditional = false;
-		showFilesx();
-	}
-	function showFilesx(){
-		// read text from URL location
-		var request = new XMLHttpRequest();
-		var serverAd = document.getElementById("lbServerAd").innerHTML;
-		var url = "./loaddirxml.php";
-		request.open('GET', url + ((/\?/).test(url) ? "&" : "?") + (new Date()).getTime(), true);
-		request.send(null);
-		request.onreadystatechange = function () {
-			if (request.readyState === 4 && request.status === 200) {
-				console.log ("Files holen: 1 ");
-				var type = request.getResponseHeader('Content-Type');
-				console.log ("Files holen: 2 " + type);
-				if (type.indexOf("text") !== 1) {
-					var modal = document.getElementById("myModal");
-					var spann = document.getElementById("drin");
+  var boxGeo  = new THREE.BoxGeometry(0.96, 0.96, 0.96);
+  var edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1));
+  var edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 });
 
-					var result = request.responseText;
-					var myStringArray = result.split("$");
-					var arrayLength = myStringArray.length;
-					for (var i = 0; i < arrayLength; i++) {
-					    //var filename = myStringArray[i];
-						console.log(myStringArray[i]);
-						var button = document.createElement('BUTTON');
-						var text = document.createTextNode(myStringArray[i]);
-						button.appendChild(text);
-						button.addEventListener("click", buttonFunctionx);
-						button.myParam = myStringArray[i];
-						spann.appendChild(button);
+  // deduplicate (overwrite duplicates — same as Minecraft behaviour)
+  var seen = {};
+  blocks.forEach(function(b) { seen[b.x+','+b.y+','+b.z] = b; });
+  var deduped = Object.values(seen);
 
-					}
-					console.log ("Files holen: 2 " + request.responseText);
+  var cx=0, cy=0, cz=0;
+  deduped.forEach(function(b) {
+    var col = BLOCK_COLORS[b.material];
+    if (col === null || col === undefined) col = 0xCCCCCC;
+    var mesh = new THREE.Mesh(boxGeo, new THREE.MeshLambertMaterial({ color: col }));
+    mesh.position.set(b.x + 0.5, b.y + 0.5, b.z + 0.5);
+    _scene.add(mesh);
+    var edges = new THREE.LineSegments(edgeGeo, edgeMat);
+    edges.position.copy(mesh.position);
+    _scene.add(edges);
+    cx+=b.x; cy+=b.y; cz+=b.z;
+  });
 
-					var button = document.createElement('BUTTON');
-					var text = document.createTextNode("Button4");
-					button.appendChild(text);
-					spann.appendChild(button);
-					modal.style.display = "block";
-				}
-			}
-		}
-	}
-  function buttonFunctionx(evt) {
-    var codedir = "/var/www/openb3/code/";
+  // focus camera on centre of structure
+  var n = deduped.length;
+  cx/=n; cy/=n; cz/=n;
+  var spread = Math.max(10, Math.sqrt(n) * 2);
+  _controls.target.set(cx, cy, cz);
+  _camera.position.set(cx + spread, cy + spread, cz + spread * 1.5);
+  _controls.update();
+}
 
+// ── Main preview entry point ───────────────────────────────────────
+function preview() {
+  document.getElementById('errorbanner').style.display = 'none';
 
-    console.log ("vor loadBlock > "+evt.currentTarget.myParam);
-    document.getElementById("myModal").style.display = "none";
-	  //alert (evt.currentTarget.myParam);
-    setTextFromx(evt.currentTarget.myParam);
-    cleanupdiv ();
-	}
+  var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
 
-  function setTextFromx(src){
-			// read text from URL location
-			var request = new XMLHttpRequest();
-			var serverAd = document.getElementById("lbServerAd").innerHTML;
-			var url = "./load_file.php";
-			request.open('GET', url + "?" + "file="+ src , true);
-			console.log ("File holen: 0 "+ src );
-			request.send(null);
-			request.onreadystatechange = function () {
-				if (request.readyState === XMLHttpRequest.DONE) {
-				  if (request.status === 200) {				
-					
-					var type = request.getResponseHeader('Content-Type');
-					
-					if (type.indexOf("text") !== 1) {
-						
-						 // alert (request.responseText);
-						loadBlock(request.responseText);
-						
-					}
-				  }
-				}
-		}
-	}
-	function loadBlock(xml) { // xml is the same block xml you stored
-	    if (typeof xml != "string" || xml.length < 5) {
-		return false;
-	    }
-	    try {
-		var dom = Blockly.Xml.textToDom(xml);
-		if (!isAdditional) Blockly.mainWorkspace.clear();
-		Blockly.Xml.domToWorkspace(Blockly.mainWorkspace, dom);
-		return true;
-	    } catch (e) {
-		return false;
-	    }
-	}
+  // Find entry function (// run: name  OR  last function definition)
+  var entryFunc = null;
+  var runMatch = code.match(/\/\/\s*run:\s*(\w+)/);
+  if (runMatch) {
+    entryFunc = runMatch[1];
+  } else {
+    var allFuncs = Array.from(code.matchAll(/^function\s+(\w+)\s*\(/mg));
+    if (allFuncs.length > 0) entryFunc = allFuncs[allFuncs.length - 1][1];
+  }
 
-	</script>
+  if (!entryFunc) {
+    document.getElementById('errorbanner').style.display = 'block';
+    document.getElementById('errorbanner').textContent = 'Kein Funktionsblock gefunden. Füge einen "function … / end function" Block ein.';
+    return;
+  }
 
+  var drone = new DronePreview();
 
+  try {
+    // Run the generated code with the drone simulator
+    var fn = new Function('drone', code + '\n' + entryFunc + '();');
+    fn(drone);
+  } catch (e) {
+    document.getElementById('errorbanner').style.display = 'block';
+    document.getElementById('errorbanner').textContent = 'Fehler: ' + e.message;
+    console.error(e);
+    return;
+  }
 
+  _initThree();
+  _renderBlocks(drone.blocks);
+}
 
+// ── Generate JS for JSMN — download ───────────────────────────────
+function showCode() {
+  var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+  var blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jsmn_script.js';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
-	<style>
-			body {
-			  
-			  background-image: url('cobble.png');
-			}
+// ── Save workspace as JSON (Blockly v12 native format) ────────────
+function saveXmlLocal() {
+  var state    = Blockly.serialization.workspaces.save(demoWorkspace);
+  var jsonText = JSON.stringify(state, null, 2);
+  // Derive filename from first funcbegin block name, fallback to 'jsmn_blocks'
+  var code      = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+  var nameMatch = code.match(/^function\s+(\w+)/m);
+  var filename  = (nameMatch ? nameMatch[1] : 'jsmn_blocks') + '.json';
+  _download(jsonText, filename, 'application/json');
+}
 
-			h1 {
-			  color: white;
-			  text-align: center;
-			}
+function _download(text, filename, mime) {
+  var blob = new Blob([text], { type: mime + ';charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
-			p {
-			  font-family: verdana;
-			  font-size: 20px;
-			}
-			.button {
-			  background-color:  #003300; /* Green */
-			  border: none;
-			  color: white;
-			  padding: 10px 24px;
-			  border-radius: 8px;
-			  text-align: center;
-			  text-decoration: none;
-			  display: inline-block;
-			  font-size: 16px;
-			  font-family:Lucida Console, Courier, monospace;
-			  border: 2px solid  #008000; 
-			}
-			.button:hover {
-			  background-color: #006600; /* Green */
-			  color: white;
-			}
-			.legend{
-				font-family:Lucida Console, Courier, monospace;
-				background-color: #003300;
-				padding: 10px 24px;
-				border-radius: 8px;
-				color: white;
-				border: 2px solid  #008000; 
-			}
-			.input {
-			  background-color:  white;/*#1f3d7a;  Green */
-			  border: none;
-			  color: black;
-			  padding: 10px 24px;
-			  border-radius: 8px;
-			  text-align: center;
-			  text-decoration: none;
-			  display: inline-block;
-			  font-size: 16px;
-			  font-weight: bold;
-			  font-family:Lucida Console, Courier, monospace;
-			  border: 2px solid  #008000; 
-			}
-			
-			body {font-family: Arial, Helvetica, sans-serif;}
+// ── Load workspace from local file(s) — JSON or legacy XML ────────
+function onFileLoad(input, additive) {
+  var files = Array.from(input.files);
+  input.value = '';   // reset so same file can be re-picked
+  if (files.length === 0) return;
 
-			/* The Modal (background) */
-			.modal {
-			  display: none; /* Hidden by default */
-			  position: fixed; /* Stay in place */
-			  z-index: 1; /* Sit on top */
-			  padding-top: 100px; /* Location of the box */
-			  left: 0;
-			  top: 0;
-			  width: 100%; /* Full width */
-			  height: 100%; /* Full height */
-			  overflow: auto; /* Enable scroll if needed */
-			  background-color: rgb(0,0,0); /* Fallback color */
-			  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-			}
+  var clearedOnce = false;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        if (!additive && !clearedOnce) { demoWorkspace.clear(); clearedOnce = true; }
 
-			/* Modal Content */
-			.modal-content {
-			  background-color: #fefefe;
-			  margin: auto;
-			  padding: 20px;
-			  border: 1px solid #888;
-			  width: 80%;
-			}
+        if (file.name.endsWith('.json')) {
+          // Blockly v12 JSON serialization
+          var state = JSON.parse(e.target.result);
+          Blockly.serialization.workspaces.load(state, demoWorkspace);
+        } else {
+          // Legacy XML — use browser DOMParser (Blockly.Xml.textToDom removed in v12)
+          var doc = new DOMParser().parseFromString(e.target.result, 'text/xml');
+          Blockly.Xml.domToWorkspace(doc.documentElement, demoWorkspace);
+        }
+      } catch(err) {
+        document.getElementById('errorbanner').style.display = 'block';
+        document.getElementById('errorbanner').textContent =
+          'Fehler beim Laden: ' + file.name + ' — ' + err.message;
+        console.error(err);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
 
-			/* The Close Button */
-			.mclose {
-			  color: #aaaaaa;
-			  float: right;
-			  font-size: 28px;
-			  font-weight: bold;
-			}
-
-			.mclose:hover,
-			.mclose:focus {
-			  color: #000;
-			  text-decoration: none;
-			  cursor: pointer;
-			}
-
-	</style>
-
-
-
-</head>
-<body >
-
-
-<!-- The Modal -->
-<div id="myModal" class="modal">
-
-  <!-- Modal content -->
-  <div class="modal-content">
-    <span class="mclose">&times;</span>
-    <p id="drin">Some text in the Modal..</p>
-  </div>
-
-</div>
-<script>
-	var modal = document.getElementById("myModal");
-	var span = document.getElementsByClassName("mclose")[0];
-	span.onclick = function() {
-		  modal.style.display = "none";
-	}
 </script>
 
 
-        <legend class="legend" > <B> OpenScriptBlocks.de - Programmieren lernen mit Blöcken. </B></legend>
+<!-- Toolbox -->
+<xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display:none">
+  <category name="JSMN Drone" colour="345">
+    <block type="funcbegin"></block>
+    <block type="funcend"></block>
+    <block type="exports"></block>
+    <block type="functioncall"></block>
+    <block type="boxcmd"></block>
+    <block type="box0"></block>
+    <block type="move"></block>
+    <block type="movevar"></block>
+  </category>
+  <category name="Loops" colour="120">
+    <block type="controls_repeat_ext">
+      <value name="TIMES"><shadow type="math_number"><field name="NUM">10</field></shadow></value>
+    </block>
+    <block type="controls_whileUntil"></block>
+    <block type="controls_for">
+      <value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+      <value name="TO"><shadow type="math_number"><field name="NUM">10</field></shadow></value>
+      <value name="BY"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+    </block>
+    <block type="controls_forEach"></block>
+  </category>
+  <category name="Logic" colour="210">
+    <block type="controls_if"></block>
+    <block type="logic_compare"></block>
+    <block type="logic_operation"></block>
+    <block type="logic_negate"></block>
+    <block type="logic_boolean"></block>
+  </category>
+  <category name="Math" colour="230">
+    <block type="math_number"></block>
+    <block type="math_arithmetic">
+      <value name="A"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+      <value name="B"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+    </block>
+    <block type="math_single">
+      <value name="NUM"><shadow type="math_number"><field name="NUM">9</field></shadow></value>
+    </block>
+    <block type="math_round">
+      <value name="NUM"><shadow type="math_number"><field name="NUM">3.1</field></shadow></value>
+    </block>
+    <block type="math_random_int">
+      <value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+      <value name="TO"><shadow type="math_number"><field name="NUM">10</field></shadow></value>
+    </block>
+  </category>
+  <category name="Variables" colour="330" custom="VARIABLE"></category>
+  <category name="Functions" colour="290" custom="PROCEDURE"></category>
+</xml>
 
-	<fieldset style="background-image: url('grass.png');">
- 	<div id='jscript'>
-			<input type='button' class="button" onclick='preview()' value='Zeige 3D Vorschau' />
-			<input type='button' id="SaveButt" class="button" onclick='saveB()' value='Speichern' />
-      <input type='button' class="button" onclick='loadB()' value='Laden' />
-      <input type='button' class="button" onclick='loadF()' value='Hinzuladen' />
-			<input type='button' class="button" onclick='showCode()' value='Generiere JavaScript' />
-	</div>
-
-<table >
-<tr>
-<td>
- 	<div id="blocklyDiv" style="height: 600px; width: 850px;"></div>
-</td>
-<td>
-	<div id="x3ddiv" style="height: 600px; width: 1200px;"></div>
-</td>
-</tr>
-</table>
-
-<div id="hilfe" style="height: 400px; width: 800px; display:inline">
-	<script>load_home();</script>
-</div>
-
-
-  <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
-     <category name="Scriptcraft" colour="%{BKY_TEXTS_HUE}">
-      <block type="drone"></block>
-      <block type="funcbegin"></block>
-      <block type="init_drone"></block>
-      <block type="boxcmd"></block>
-      <block type="move"></block>
-      <block type="funcend"></block>
-      <block type="exports"></block>
-      <block type="functioncall"></block>
-      <block type="box0"></block>
-      <block type="movevar"></block>
-    </category>
-    <category name="Loops" colour="120">
-      <block type="controls_repeat_ext">
-        <value name="TIMES">
-          <shadow type="math_number">
-            <field name="NUM">10</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="controls_whileUntil"></block>
-      <block type="controls_for">
-        <value name="FROM">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-        <value name="TO">
-          <shadow type="math_number">
-            <field name="NUM">10</field>
-          </shadow>
-        </value>
-        <value name="BY">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="controls_forEach"></block>
-      <block type="controls_flow_statements"></block>
-    </category>
-  <sep></sep>
-   <category name="Logic" colour="210">
-      <block type="controls_if"></block>
-      <block type="logic_compare"></block>
-      <block type="logic_operation"></block>
-      <block type="logic_negate"></block>
-      <block type="logic_boolean"></block>
-      <block type="logic_null"></block>
-      <block type="logic_ternary"></block>
-    </category>
-
-    <category name="Math" colour="230">
-      <block type="math_number"></block>
-      <block type="math_arithmetic">
-        <value name="A">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-        <value name="B">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_single">
-        <value name="NUM">
-          <shadow type="math_number">
-            <field name="NUM">9</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_trig">
-        <value name="NUM">
-          <shadow type="math_number">
-            <field name="NUM">45</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_constant"></block>
-      <block type="math_number_property">
-        <value name="NUMBER_TO_CHECK">
-          <shadow type="math_number">
-            <field name="NUM">0</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_round">
-        <value name="NUM">
-          <shadow type="math_number">
-            <field name="NUM">3.1</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_on_list"></block>
-      <block type="math_modulo">
-        <value name="DIVIDEND">
-          <shadow type="math_number">
-            <field name="NUM">64</field>
-          </shadow>
-        </value>
-        <value name="DIVISOR">
-          <shadow type="math_number">
-            <field name="NUM">10</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_constrain">
-        <value name="VALUE">
-          <shadow type="math_number">
-            <field name="NUM">50</field>
-          </shadow>
-        </value>
-        <value name="LOW">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-        <value name="HIGH">
-          <shadow type="math_number">
-            <field name="NUM">100</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_random_int">
-        <value name="FROM">
-          <shadow type="math_number">
-            <field name="NUM">1</field>
-          </shadow>
-        </value>
-        <value name="TO">
-          <shadow type="math_number">
-            <field name="NUM">100</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="math_random_float"></block>
-    </category>
-    <category name="Text" colour="160">
-      <block type="text"></block>
-      <block type="text_join"></block>
-      <block type="text_append">
-        <value name="TEXT">
-          <shadow type="text"></shadow>
-        </value>
-      </block>
-      <block type="text_length">
-        <value name="VALUE">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_isEmpty">
-        <value name="VALUE">
-          <shadow type="text">
-            <field name="TEXT"></field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_indexOf">
-        <value name="VALUE">
-          <block type="variables_get">
-            <field name="VAR">text</field>
-          </block>
-        </value>
-        <value name="FIND">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_charAt">
-        <value name="VALUE">
-          <block type="variables_get">
-            <field name="VAR">text</field>
-          </block>
-        </value>
-      </block>
-      <block type="text_getSubstring">
-        <value name="STRING">
-          <block type="variables_get">
-            <field name="VAR">text</field>
-          </block>
-        </value>
-      </block>
-      <block type="text_changeCase">
-        <value name="TEXT">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_trim">
-        <value name="TEXT">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_print">
-        <value name="TEXT">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="text_prompt_ext">
-        <value name="TEXT">
-          <shadow type="text">
-            <field name="TEXT">abc</field>
-          </shadow>
-        </value>
-      </block>
-    </category>
-    <category name="Lists" colour="260">
-      <block type="lists_create_with">
-        <mutation items="0"></mutation>
-      </block>
-      <block type="lists_create_with"></block>
-      <block type="lists_repeat">
-        <value name="NUM">
-          <shadow type="math_number">
-            <field name="NUM">5</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="lists_length"></block>
-      <block type="lists_isEmpty"></block>
-      <block type="lists_indexOf">
-        <value name="VALUE">
-          <block type="variables_get">
-            <field name="VAR">list</field>
-          </block>
-        </value>
-      </block>
-      <block type="lists_getIndex">
-        <value name="VALUE">
-          <block type="variables_get">
-            <field name="VAR">list</field>
-          </block>
-        </value>
-      </block>
-      <block type="lists_setIndex">
-        <value name="LIST">
-          <block type="variables_get">
-            <field name="VAR">list</field>
-          </block>
-        </value>
-      </block>
-      <block type="lists_getSublist">
-        <value name="LIST">
-          <block type="variables_get">
-            <field name="VAR">list</field>
-          </block>
-        </value>
-      </block>
-      <block type="lists_split">
-        <value name="DELIM">
-          <shadow type="text">
-            <field name="TEXT">,</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="lists_sort"></block>
-    </category>
-    <category name="Colour" colour="20">
-      <block type="colour_picker"></block>
-      <block type="colour_random"></block>
-      <block type="colour_rgb">
-        <value name="RED">
-          <shadow type="math_number">
-            <field name="NUM">100</field>
-          </shadow>
-        </value>
-        <value name="GREEN">
-          <shadow type="math_number">
-            <field name="NUM">50</field>
-          </shadow>
-        </value>
-        <value name="BLUE">
-          <shadow type="math_number">
-            <field name="NUM">0</field>
-          </shadow>
-        </value>
-      </block>
-      <block type="colour_blend">
-        <value name="COLOUR1">
-          <shadow type="colour_picker">
-            <field name="COLOUR">#ff0000</field>
-          </shadow>
-        </value>
-        <value name="COLOUR2">
-          <shadow type="colour_picker">
-            <field name="COLOUR">#3333ff</field>
-          </shadow>
-        </value>
-        <value name="RATIO">
-          <shadow type="math_number">
-            <field name="NUM">0.5</field>
-          </shadow>
-        </value>
-      </block>
-    </category>
-    <sep></sep>
-    <category name="Variables" colour="330" custom="VARIABLE"></category>
-    <category name="Functions" colour="290" custom="PROCEDURE"></category>
-    <sep></sep>
-  </xml>
-
-<!-- The DemoBlocks -->
-<xml xmlns="https://developers.google.com/blockly/xml" id="startBlocks" style="display: none">
-  <block type="drone" id="}g:q^Jz7~p;GZpMF$;8t" x="16" y="10">
-    <field name="NAME">var drone</field>
+<!-- Demo startup blocks -->
+<xml xmlns="https://developers.google.com/blockly/xml" id="startBlocks" style="display:none">
+  <block type="funcbegin" x="20" y="20">
+    <field name="funcname">demoprg</field>
     <next>
-      <block type="funcbegin" id="tsCGOm@Z),xlodl{]4OZ">
-        <field name="funcname">demoprg</field>
+      <block type="boxcmd">
+        <field name="NAME">DIRT</field>
+        <field name="width">4</field>
+        <field name="height">1</field>
+        <field name="depth">4</field>
         <next>
-          <block type="init_drone" id="Sh%!bZ5@cxuOoSgTWQwi">
+          <block type="move">
+            <field name="wayto">up</field>
+            <field name="amount">1</field>
             <next>
-              <block type="boxcmd" id="_u84bXLAU?eAoqHAcq4v">
-                <field name="NAME">dirt</field>
-                <field name="width">2</field>
-                <field name="height">2</field>
-                <field name="depth">2</field>
+              <block type="boxcmd">
+                <field name="NAME">QUARTZ_BLOCK</field>
+                <field name="width">3</field>
+                <field name="height">3</field>
+                <field name="depth">3</field>
                 <next>
-                  <block type="move" id="o/79`Q|c8IW:JGiVfaIk">
+                  <block type="move">
                     <field name="wayto">up</field>
-                    <field name="amount">1</field>
+                    <field name="amount">3</field>
                     <next>
-                      <block type="boxcmd" id="s[~%GmF4+TeI3MzX`$~y">
-                        <field name="NAME">quartz</field>
+                      <block type="boxcmd">
+                        <field name="NAME">DIAMOND_BLOCK</field>
                         <field name="width">2</field>
                         <field name="height">2</field>
                         <field name="depth">2</field>
                         <next>
-                          <block type="move" id="_825K(xfE[vCRtV.Kr4_">
-                            <field name="wayto">up</field>
-                            <field name="amount">2</field>
+                          <block type="funcend">
                             <next>
-                              <block type="boxcmd" id="kAtPl_yButWmM@{C5;9R">
-                                <field name="NAME">diamond</field>
-                                <field name="width">2</field>
-                                <field name="height">2</field>
-                                <field name="depth">2</field>
-                                <next>
-                                  <block type="funcend" id="%^7T3@*yKb5w1rS*`zfx">
-                                    <next>
-                                      <block type="exports" id=":00mc]ly]V1H$)st5Z36">
-                                        <field name="exportname">demoprg</field>
-                                      </block>
-                                    </next>
-                                  </block>
-                                </next>
+                              <block type="exports">
+                                <field name="exportname">demoprg</field>
                               </block>
                             </next>
                           </block>
@@ -813,55 +455,14 @@ function loadF ()
     </next>
   </block>
 </xml>
-<!-- END The DemoBlocks -->
-  <script>
-     var demoWorkspace = Blockly.inject('blocklyDiv',{toolbox: document.getElementById('toolbox')});
 
-    Blockly.Xml.domToWorkspace(document.getElementById('startBlocks'),demoWorkspace);
+<script>
+  var demoWorkspace = Blockly.inject('blocklyDiv', {
+    toolbox: document.getElementById('toolbox')
+  });
+  Blockly.Xml.domToWorkspace(document.getElementById('startBlocks'), demoWorkspace);
+</script>
 
-    function showCode() {
-      // Generate JavaScript code and display it.
-      Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
-      var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
-      save_localfile(code);
-      //alert(code);
-    }
-
- 	function SaveJSTempfile(text){
-		var xmlhttp = new XMLHttpRequest();
-
-		xmlhttp.open("POST","./call3d.php",true);
-		xmlhttp.setRequestHeader("Content-type", "text/text");
-		xmlhttp.send(text);
-		xmlhttp.onreadystatechange = function () {
-			if (xmlhttp.readyState === XMLHttpRequest.DONE) {
-			  if (xmlhttp.status === 200) {				
-				
-				var type = xmlhttp.getResponseHeader('Content-Type');
-				
-				if (type.indexOf("text") !== 1) {
-					//alert (xmlhttp.responseText);
-	   document.getElementById("x3ddiv").innerHTML='<object type="text/html" style="height: 1200px; width: 900px;" data="x3ddata/'+xmlhttp.responseText+'" ></object>';
-
-				}
-			  }
-			}
-		}		
-	}
-
-
-	function preview() 
-	{  
-	      Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
-	      var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
-	      var filename = SaveJSTempfile(code);
-	}
-
-  </script>
-
-
-
-
- <label id="lbServerAd"><?php echo $_SERVER['SERVER_NAME'];?></label>
+<label id="lbServerAd" style="display:none"><?php echo htmlspecialchars($_SERVER['SERVER_NAME']); ?></label>
 </body>
 </html>

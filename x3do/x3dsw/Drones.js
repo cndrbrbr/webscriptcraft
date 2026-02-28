@@ -1,7 +1,20 @@
-// (c)2022 cndrbrbr 
+// (c)2022 cndrbrbr — updated 2026 for JSMN uppercase material names
 'use strict';
-const Filex3 = require('./Filex3');
+const Filex3  = require('./Filex3');
+const blocksMap = require('./blocks');
 const fs = new Filex3("name"+Date.now());
+
+// Resolve a material name (JSMN uppercase or legacy lowercase) to a PNG filename.
+function resolveTexture(material) {
+  if (!material) return 'quartz_block_side.png';
+  // Handle dot-notation legacy strings like "wool.red"
+  if (material.indexOf('.') !== -1) {
+    var parts = material.split('.');
+    var top = blocksMap[parts[0]];
+    if (top && typeof top === 'object') return top[parts[1]] || 'quartz_block_side.png';
+  }
+  return blocksMap[material] || blocksMap[material.toLowerCase()] || 'quartz_block_side.png';
+}
 // ----------------------------------------------------------------
 //  Drone klasse fuer scriptcraft
 // ----------------------------------------------------------------
@@ -38,14 +51,14 @@ class Drones {
 	   console.log('box '+ material +" " + w +" " + h +" " + d );
 	   this.printpos ();   
 
-	   //fs.addBoxAt (material,this.curw,this.curh,this.curd);
+	   //fs.addBoxAt(resolveTexture(material),this.curw,this.curh,this.curd);
 
 	   var px = this.curw;
 	   var pz = this.curh;
 	   var py = this.curd;
 
 	   if (this.direction == 0) { // nach vorne sehen
-		fs.addBoxAtOnce (material,px,pz,py,w,h,d);
+		fs.addBoxAtOnce(resolveTexture(material),px,pz,py,w,h,d);
 		
 	   }
 	   if (this.direction == 1) { // rechts 
@@ -55,7 +68,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px+i,pz+k,py+j);
+			   		fs.addBoxAt(resolveTexture(material),px+i,pz+k,py+j);
 				}
 			}
 		}
@@ -67,7 +80,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px+j,pz+k,py + i);
+			   		fs.addBoxAt(resolveTexture(material),px+j,pz+k,py + i);
 				}
 			}
 		}
@@ -80,7 +93,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px-i,pz+k,py+j);
+			   		fs.addBoxAt(resolveTexture(material),px-i,pz+k,py+j);
 				}
 			}
 		}
@@ -95,7 +108,7 @@ class Drones {
 	   //console.log('box '+ material +" " + w +" " + h +" " + d );
 	   this.printpos ();   
 
-	   //fs.addBoxAt (material,this.curw,this.curh,this.curd);
+	   //fs.addBoxAt(resolveTexture(material),this.curw,this.curh,this.curd);
 
 	   var px = this.curw;
 	   var pz = this.curh;
@@ -108,7 +121,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px+j,pz+k,py - i);
+			   		fs.addBoxAt(resolveTexture(material),px+j,pz+k,py - i);
 				}
 			}
 		}
@@ -120,7 +133,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px+i,pz+k,py+j);
+			   		fs.addBoxAt(resolveTexture(material),px+i,pz+k,py+j);
 				}
 			}
 		}
@@ -132,7 +145,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px+j,pz+k,py + i);
+			   		fs.addBoxAt(resolveTexture(material),px+j,pz+k,py + i);
 				}
 			}
 		}
@@ -145,7 +158,7 @@ class Drones {
 		for (k = 0; k < h; k++) { // hoehe
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
-			   		fs.addBoxAt (material,px-i,pz+k,py+j);
+			   		fs.addBoxAt(resolveTexture(material),px-i,pz+k,py+j);
 				}
 			}
 		}
@@ -167,7 +180,7 @@ class Drones {
 		material = "quartz_block_side.png";
 	   }
 		
-	   //fs.addBoxAt (material,this.curw,this.curh,this.curd);
+	   //fs.addBoxAt(resolveTexture(material),this.curw,this.curh,this.curd);
 
 	   var px = this.curw;
 	   var pz = this.curh;
@@ -181,7 +194,7 @@ class Drones {
 			for (j = 0; j < w; j++) { // breite : erste und letzte
 				for (i = 0; i < d; i++) { // tiefe : erste und letzte
 					if ((i==0)||(i==d-1)|| (j==0)||(j==w-1))
-				   		fs.addBoxAt (material,px+j,pz+k,py - i);
+				   		fs.addBoxAt(resolveTexture(material),px+j,pz+k,py - i);
 				}
 			}
 		}
@@ -194,7 +207,7 @@ class Drones {
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
 					if ((i==0)||(i==d-1)|| (j==0)||(j==w-1))
-			   		    fs.addBoxAt (material,px+i,pz+k,py+j);
+			   		    fs.addBoxAt(resolveTexture(material),px+i,pz+k,py+j);
 				}
 			}
 		}
@@ -207,7 +220,7 @@ class Drones {
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
 					if ((i==0)||(i==d-1)|| (j==0)||(j==w-1))
-			   		   fs.addBoxAt (material,px+j,pz+k,py + i);
+			   		   fs.addBoxAt(resolveTexture(material),px+j,pz+k,py + i);
 				}
 			}
 		}
@@ -221,7 +234,7 @@ class Drones {
 			for (j = 0; j < w; j++) { // breite
 				for (i = 0; i < d; i++) { // tiefe
 					if ((i==0)||(i==d-1)|| (j==0)||(j==w-1))
-			   		   fs.addBoxAt (material,px-i,pz+k,py+j);
+			   		   fs.addBoxAt(resolveTexture(material),px-i,pz+k,py+j);
 				}
 			}
 		}
