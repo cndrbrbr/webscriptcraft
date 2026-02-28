@@ -26,7 +26,8 @@ Built in the tradition of [ScriptCraft by Walter Higgins](https://github.com/wal
 │    [box DIAMOND 1×1×1]       │     │      "DIAMOND_BLOCK"│
 │  [end function]              │     │      ,1,1,1);       │
 │  [preview function draw]     │     │  };                 │
-│                              │     │  draw();  ← auto!   │
+│                              │     │  draw();            │
+│                              │     │  player.send...     │
 └──────────────────────────────┘     └──────────┬──────────┘
                                                 │
                  ┌──────────────────────────────┘
@@ -47,7 +48,7 @@ Built in the tradition of [ScriptCraft by Walter Higgins](https://github.com/wal
 - **Live 3D preview** — Three.js renderer runs the drone simulation entirely in the browser; no PHP or Node.js required
 - **Interactive camera** — drag to orbit, scroll to zoom
 - **Local save/load** — workspace saved as JSON, multiple files can be loaded and combined
-- **JSMN-compatible output** — generates `drone.box("DIRT", 2, 2, 2)` ready to paste into `/rs`
+- **JSMN-compatible output** — generates `drone.box("DIRT", 2, 2, 2)` ready to drop into `/plugins/jsmn/scripts/`
 - **Legacy XML support** — load old `.xml` files from the original webscriptcraft
 
 ---
@@ -108,7 +109,14 @@ Copy it to your Minecraft server's scripts folder:
 /plugins/jsmn/scripts/draw.js
 ```
 
-The file already contains the function call at the bottom (`draw();`), so JSMN executes it automatically when the script loads. You can also re-run it any time with:
+The file already contains the function call and a completion message at the bottom:
+
+```javascript
+draw();
+player.sendMessage("Done!");
+```
+
+JSMN executes it automatically when the script loads and notifies you in chat when the build is complete. You can also re-run it any time with:
 
 ```
 /rs draw

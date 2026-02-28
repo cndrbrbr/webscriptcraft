@@ -63,7 +63,7 @@ Das Beste daran: Du kannst im Browser sofort eine **3D-Vorschau** sehen, bevor d
 | **💾 XML speichern** | Speichert deine Blöcke als `.json`-Datei auf deinen Computer |
 | **📂 XML laden** | Lädt eine gespeicherte `.json`- oder `.xml`-Datei |
 | **➕ XML hinzuladen** | Lädt eine Datei **zusätzlich** — dein aktuelles Werk bleibt erhalten |
-| **JavaScript ↓** | Lädt den fertigen JavaScript-Code herunter |
+| **JavaScript ↓** | Lädt den fertigen JavaScript-Code herunter (inkl. Funktionsaufruf & „Done!"-Meldung) |
 
 ---
 
@@ -447,13 +447,16 @@ function haus() {
   drone.up(4);
   drone.box("QUARTZ_BLOCK", 5, 1, 5);
 };
-haus();  // ← automatisch eingefügt vom "preview function"-Block
+haus();                        // ← automatisch vom "preview function"-Block
+player.sendMessage("Done!");   // ← du siehst "Done!" im Chat wenn fertig
 ```
 
 Im Minecraft:
 ```
 /rs haus
 ```
+
+Wenn das Gebäude fertig gebaut ist, erscheint **„Done!"** in deinem Chat.
 
 ### Verfügbare Drohnenmethoden
 
