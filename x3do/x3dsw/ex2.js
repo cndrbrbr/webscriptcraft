@@ -12,37 +12,39 @@ try {
   const data  = fs.readFileSync(process.argv[2], 'UTF-8');
   const lines = data.split(/\r?\n/);
 
-  var entryFunc = null;   // function name marked with "// run: <name>"
-  var funcNames = [];     // all defined function names (fallback)
+  var entryFunc = null;
+  var funcNames = [];
+  var hasCall   = false;   // true if code already contains funcname();
 
   lines.forEach(function(line) {
-    // Skip legacy ScriptCraft lines not needed in JSMN
+    // Skip legacy ScriptCraft lines
     if (line.startsWith('var drone')) return;
-    if (line.startsWith('drone = box(')) return;          // old init_drone
-    if (line.match(/^\s*exports\.\w+\s*=/)) return;       // old exports
+    if (line.startsWith('drone = box(')) return;
+    if (line.match(/^\s*exports\.\w+\s*=/)) return;
 
-    // Detect entry point comment: "// run: funcName"
-    var runMatch = line.match(/^\/\/\s*run:\s*(\w+)/);
-    if (runMatch) {
-      entryFunc = runMatch[1];
-      return; // don't emit the comment line into the Node script
+    // Detect standalone function call: funcname();
+    var callMatch = line.match(/^(\w+)\(\);\s*$/);
+    if (callMatch) {
+      entryFunc = callMatch[1];
+      hasCall   = true;
+      res += line + "\n";
+      return;
     }
 
-    // Collect all function names as fallback
+    // Collect function definitions as fallback
     var funcMatch = line.match(/^function\s+(\w+)\s*\(\)/);
-    if (funcMatch) {
-      funcNames.push(funcMatch[1]);
-    }
+    if (funcMatch) funcNames.push(funcMatch[1]);
 
     res += line + "\n";
   });
 
-  // Determine which function(s) to call for the 3D preview
-  if (entryFunc) {
-    res += entryFunc + "();\n";
-  } else if (funcNames.length > 0) {
-    // Call the last defined function (typically the main/entry one)
-    res += funcNames[funcNames.length - 1] + "();\n";
+  // Only add the call if the code doesn't already have one
+  if (!hasCall) {
+    if (entryFunc) {
+      res += entryFunc + "();\n";
+    } else if (funcNames.length > 0) {
+      res += funcNames[funcNames.length - 1] + "();\n";
+    }
   }
 
   res += "var erg = drone.writethefile();\n";

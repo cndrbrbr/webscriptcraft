@@ -252,28 +252,12 @@ function preview() {
 
   var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
 
-  // Find entry function (// run: name  OR  last function definition)
-  var entryFunc = null;
-  var runMatch = code.match(/\/\/\s*run:\s*(\w+)/);
-  if (runMatch) {
-    entryFunc = runMatch[1];
-  } else {
-    var allFuncs = Array.from(code.matchAll(/^function\s+(\w+)\s*\(/mg));
-    if (allFuncs.length > 0) entryFunc = allFuncs[allFuncs.length - 1][1];
-  }
-
-  if (!entryFunc) {
-    document.getElementById('errorbanner').style.display = 'block';
-    document.getElementById('errorbanner').textContent = 'Kein Funktionsblock gefunden. Füge einen "function … / end function" Block ein.';
-    return;
-  }
-
+  // The generated code already ends with funcname(); from the "preview function" block.
+  // Just run it directly with the drone simulator in scope.
   var drone = new DronePreview();
 
   try {
-    // Run the generated code with the drone simulator
-    var fn = new Function('drone', code + '\n' + entryFunc + '();');
-    fn(drone);
+    new Function('drone', code)(drone);
   } catch (e) {
     document.getElementById('errorbanner').style.display = 'block';
     document.getElementById('errorbanner').textContent = 'Fehler: ' + e.message;

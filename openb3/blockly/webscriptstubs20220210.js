@@ -52,9 +52,7 @@ Blockly.JavaScript.forBlock['funcend'] = function(block) {
 
 Blockly.JavaScript.forBlock['exports'] = function(block) {
   var name = block.getFieldValue('exportname');
-  // Comment used by 3D preview to find the entry point.
-  // In Minecraft: /rs <name>
-  return '// run: ' + name + '\n';
+  return name + '();\n';
 };
 
 Blockly.JavaScript.forBlock['functioncall'] = function(block) {
