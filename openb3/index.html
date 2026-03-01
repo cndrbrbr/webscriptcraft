@@ -310,8 +310,16 @@ function onFileLoad(input, additive) {
 
         if (file.name.endsWith('.json')) {
           // Blockly v12 JSON serialization
-          var state = JSON.parse(e.target.result);
-          Blockly.serialization.workspaces.load(state, demoWorkspace);
+          var incoming = JSON.parse(e.target.result);
+          if (additive) {
+            // Merge: serialization.load always wipes, so we combine block lists manually
+            var current = Blockly.serialization.workspaces.save(demoWorkspace);
+            var curBlocks = (current.blocks && current.blocks.blocks) ? current.blocks.blocks : [];
+            var newBlocks = (incoming.blocks && incoming.blocks.blocks) ? incoming.blocks.blocks : [];
+            incoming.blocks = incoming.blocks || { languageVersion: 0, blocks: [] };
+            incoming.blocks.blocks = curBlocks.concat(newBlocks);
+          }
+          Blockly.serialization.workspaces.load(incoming, demoWorkspace);
         } else {
           // Legacy XML — use browser DOMParser (Blockly.Xml.textToDom removed in v12)
           var doc = new DOMParser().parseFromString(e.target.result, 'text/xml');
