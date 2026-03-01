@@ -1,6 +1,10 @@
 # SSL private key — never commit
 ssl/server.key
 
+# Runtime files
+server.pid
+server.log
+
 # PHP session / data files
 openb3/data/*.xml
 openb3/data/*.json
