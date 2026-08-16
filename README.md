@@ -7,6 +7,8 @@
 ![Three.js](https://img.shields.io/badge/Three.js-r140-black?style=flat-square)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square)
 
+![WebScriptCraft — Programmieren lernen mit Blockly & JavaScript](openb3/hero.jpg)
+
 ---
 
 ## What is this?
