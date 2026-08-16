@@ -21,7 +21,7 @@ Blockly.JavaScript.forBlock['box0'] = function(block) {
   var valueW = Blockly.JavaScript.valueToCode(block, 'X', _ORDER_ATOMIC) || '1';
   var valueH = Blockly.JavaScript.valueToCode(block, 'Z', _ORDER_ATOMIC) || '1';
   var valueD = Blockly.JavaScript.valueToCode(block, 'Y', _ORDER_ATOMIC) || '1';
-  return 'drone.' + type + '("' + mat + '",' + valueW + ',' + valueH + ',' + valueD + ');\n';
+  return 'drone.' + type + '("' + mat + '",Math.floor(' + valueW + '),Math.floor(' + valueH + '),Math.floor(' + valueD + '));\n';
 };
 
 Blockly.JavaScript.forBlock['move'] = function(block) {
