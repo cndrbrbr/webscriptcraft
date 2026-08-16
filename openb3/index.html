@@ -282,11 +282,11 @@ function preview() {
 
 // ── Generate JS for JSMN — download ───────────────────────────────
 function showCode() {
-  var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+  var raw = Blockly.JavaScript.workspaceToCode(demoWorkspace);
   // Use the called function name (funcname();) as filename, fallback to 'jsmn_script'
-  var callMatch = code.match(/^(\w+)\(\);\s*$/m);
+  var callMatch = raw.match(/^(\w+)\(\);\s*$/m);
   var filename  = (callMatch ? callMatch[1] : 'jsmn_script') + '.js';
-  code += 'player.sendMessage("Done!");\n';
+  var code = _prettyPrintJs(raw) + '\nplayer.sendMessage("Done!");\n';
   _download(code, filename, 'text/plain');
 }
 
@@ -296,8 +296,25 @@ function showCode() {
 // the JS is only committed back to blocks explicitly, via Apply.
 var _lastGeneratedJs = '';
 
+// Indents nested lines and spaces out commas for readability. Only ever
+// adds whitespace -- never reorders, merges, or splits lines -- so the
+// JS -> Blocks parser (which trims each line and already tolerates
+// flexible whitespace around commas) keeps parsing it identically.
+function _prettyPrintJs(code) {
+  var lines = code.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+  var indent = 0;
+  var out = [];
+  lines.forEach(function(line) {
+    if (/^\};?$/.test(line)) indent = Math.max(0, indent - 1);
+    var spaced = line.replace(/,(?!\s)/g, ', ');
+    out.push('  '.repeat(indent) + spaced);
+    if (/\{\s*$/.test(line)) indent++;
+  });
+  return out.join('\n');
+}
+
 function refreshJsView() {
-  var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+  var code = _prettyPrintJs(Blockly.JavaScript.workspaceToCode(demoWorkspace));
   _lastGeneratedJs = code;
   document.getElementById('jsCodeArea').value = code;
 }
