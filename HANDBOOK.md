@@ -64,6 +64,9 @@ Das Beste daran: Du kannst im Browser sofort eine **3D-Vorschau** sehen, bevor d
 | **📂 XML laden** | Lädt eine gespeicherte `.json`- oder `.xml`-Datei |
 | **➕ XML hinzuladen** | Lädt eine Datei **zusätzlich** — dein aktuelles Werk bleibt erhalten |
 | **JavaScript ↓** | Lädt den fertigen JavaScript-Code herunter (inkl. Funktionsaufruf & „Done!"-Meldung) |
+| **🧩 Blöcke** / **{ } JavaScript** | Wechselt zwischen dem Blöcke-Editor und einer Textansicht des daraus erzeugten JavaScript-Codes |
+
+> **Blöcke ↔ JavaScript:** Klicke **{ } JavaScript**, um den aktuellen Code zu sehen. Du kannst ihn dort auch bearbeiten — mit **✅ In Blöcke übernehmen** wird er zurück in Blöcke verwandelt. Das funktioniert aber nur für Code, der genau dem Muster entspricht, das die Blöcke selbst erzeugen (kein `for`, kein `let`, keine Variablen) — alles andere wird mit der betroffenen Zeile abgelehnt, statt falsch geraten zu werden.
 
 ---
 

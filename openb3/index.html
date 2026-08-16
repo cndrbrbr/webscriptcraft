@@ -67,12 +67,27 @@
     <input type="button" class="button" onclick="document.getElementById('fileInputAdd').click()"  value="➕ XML hinzuladen" />
     <input type="button" class="button" onclick="showCode()"                        value="JavaScript ↓" />
   </div>
+  <div style="margin-bottom:6px;">
+    <input type="button" class="button" id="btnViewBlocks" onclick="showBlocksView()" value="🧩 Blöcke" />
+    <input type="button" class="button" id="btnViewJs"     onclick="showJsView()"     value="{ } JavaScript" />
+  </div>
   <div id="errorbanner"></div>
 
   <table>
     <tr>
       <td valign="top">
         <div id="blocklyDiv" style="height:600px; width:850px;"></div>
+        <div id="jsViewDiv" style="height:600px; width:850px; display:none; box-sizing:border-box;">
+          <textarea id="jsCodeArea" spellcheck="false" style="width:100%; height:540px; box-sizing:border-box;
+            font-family:'Lucida Console',Courier,monospace; font-size:14px;
+            background:#001a00; color:#b6ffb6; border:2px solid #008000; border-radius:4px; padding:8px;"></textarea>
+          <div style="margin-top:6px;">
+            <input type="button" class="button" onclick="applyJsToBlocks()" value="✅ In Blöcke übernehmen" />
+            <span style="color:#333; font-family:monospace; font-size:12px;">
+              Nur JSMN-Blockmuster werden erkannt — freies JavaScript (Schleifen, Variablen, Ausdrücke) wird abgelehnt.
+            </span>
+          </div>
+        </div>
       </td>
       <td valign="top">
         <div id="x3ddiv" style="height:600px; width:700px;"></div>
@@ -273,6 +288,156 @@ function showCode() {
   var filename  = (callMatch ? callMatch[1] : 'jsmn_script') + '.js';
   code += 'player.sendMessage("Done!");\n';
   _download(code, filename, 'text/plain');
+}
+
+// ── Blocks / JavaScript view toggle ────────────────────────────────
+// Blocks are the source of truth by default: switching to the JS view
+// always regenerates the textarea from the current workspace. Editing
+// the JS is only committed back to blocks explicitly, via Apply.
+var _lastGeneratedJs = '';
+
+function refreshJsView() {
+  var code = Blockly.JavaScript.workspaceToCode(demoWorkspace);
+  _lastGeneratedJs = code;
+  document.getElementById('jsCodeArea').value = code;
+}
+
+function showJsView() {
+  refreshJsView();
+  document.getElementById('blocklyDiv').style.display = 'none';
+  document.getElementById('jsViewDiv').style.display = 'block';
+}
+
+function showBlocksView() {
+  var current = document.getElementById('jsCodeArea').value;
+  if (document.getElementById('jsViewDiv').style.display !== 'none' && current !== _lastGeneratedJs) {
+    var ok = confirm('Ungespeicherte Änderungen im JavaScript-Code gehen verloren, wenn du nicht zuerst auf ' +
+                      '"In Blöcke übernehmen" klickst. Trotzdem zu den Blöcken wechseln?');
+    if (!ok) return;
+  }
+  document.getElementById('jsViewDiv').style.display = 'none';
+  document.getElementById('blocklyDiv').style.display = 'block';
+}
+
+// ── JavaScript → Blocks: best-effort parser for the JSMN vocabulary ─
+// Understands exactly the patterns the JSMN block generators emit
+// (function wrapper, drone.box/box0/movement calls, function calls).
+// Anything outside that vocabulary — loops, variables, arithmetic,
+// arbitrary JS — is rejected with the offending line number rather
+// than silently dropped or guessed at. This is deliberate: a general
+// JS-to-Blockly parser isn't realistic, but JSMN's own limited output
+// grammar is small enough to round-trip reliably.
+function _escXml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _blocksToXml(blocks) {
+  var opens = blocks.map(function(b) {
+    if (b.type === 'funcbegin') {
+      return '<block type="funcbegin"><field name="funcname">' + _escXml(b.funcname) + '</field>';
+    }
+    if (b.type === 'funcend') {
+      return '<block type="funcend">';
+    }
+    if (b.type === 'boxcmd') {
+      return '<block type="boxcmd">'
+           + '<field name="NAME">' + _escXml(b.mat) + '</field>'
+           + '<field name="width">' + b.width + '</field>'
+           + '<field name="height">' + b.height + '</field>'
+           + '<field name="depth">' + b.depth + '</field>';
+    }
+    if (b.type === 'box0') {
+      return '<block type="box0">'
+           + '<field name="Boxtype">' + _escXml(b.boxtype) + '</field>'
+           + '<field name="NAME">' + _escXml(b.mat) + '</field>'
+           + '<value name="X"><block type="math_number"><field name="NUM">' + b.w + '</field></block></value>'
+           + '<value name="Z"><block type="math_number"><field name="NUM">' + b.h + '</field></block></value>'
+           + '<value name="Y"><block type="math_number"><field name="NUM">' + b.d + '</field></block></value>';
+    }
+    if (b.type === 'move') {
+      return '<block type="move">'
+           + '<field name="wayto">' + _escXml(b.dir) + '</field>'
+           + '<field name="amount">' + b.amount + '</field>';
+    }
+    if (b.type === 'exports') {
+      return '<block type="exports"><field name="exportname">' + _escXml(b.funcname) + '</field>';
+    }
+    if (b.type === 'functioncall') {
+      return '<block type="functioncall"><field name="funcname">' + _escXml(b.funcname) + '</field>';
+    }
+  });
+
+  var xml = '';
+  for (var i = 0; i < opens.length; i++) {
+    xml += opens[i];
+    if (i < opens.length - 1) xml += '<next>';
+  }
+  for (var j = 0; j < opens.length; j++) {
+    xml += '</block>';
+    if (j < opens.length - 1) xml += '</next>';
+  }
+  return '<xml xmlns="https://developers.google.com/blockly/xml">' + xml + '</xml>';
+}
+
+function _parseJsToBlocks(code) {
+  var lines = code.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+  var blocks = [];
+  var insideFunction = false;
+
+  var RE_FUNCBEGIN = /^function\s+(\w+)\s*\(\)\s*\{$/;
+  var RE_FUNCEND   = /^\};?$/;
+  var RE_BOXCMD    = /^drone\.box\(\s*"([^"]*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;$/;
+  var RE_BOX0      = /^drone\.(box0|box)\(\s*"([^"]*)"\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
+  var RE_MOVE      = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*(-?\d+)\s*\)\s*;$/;
+  var RE_MOVE_FLR  = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
+  var RE_CALL      = /^(\w+)\(\)\s*;$/;
+
+  for (var idx = 0; idx < lines.length; idx++) {
+    var line = lines[idx], m;
+    if ((m = line.match(RE_FUNCBEGIN))) {
+      blocks.push({ type: 'funcbegin', funcname: m[1] });
+      insideFunction = true;
+    } else if (RE_FUNCEND.test(line)) {
+      blocks.push({ type: 'funcend' });
+      insideFunction = false;
+    } else if ((m = line.match(RE_BOXCMD))) {
+      blocks.push({ type: 'boxcmd', mat: m[1], width: m[2], height: m[3], depth: m[4] });
+    } else if ((m = line.match(RE_BOX0))) {
+      blocks.push({
+        type: 'box0', boxtype: m[1], mat: m[2],
+        w: Math.floor(parseFloat(m[3])), h: Math.floor(parseFloat(m[4])), d: Math.floor(parseFloat(m[5]))
+      });
+    } else if ((m = line.match(RE_MOVE))) {
+      blocks.push({ type: 'move', dir: m[1], amount: m[2] });
+    } else if ((m = line.match(RE_MOVE_FLR))) {
+      blocks.push({ type: 'move', dir: m[1], amount: String(Math.floor(parseFloat(m[2]))) });
+    } else if ((m = line.match(RE_CALL))) {
+      blocks.push({ type: insideFunction ? 'functioncall' : 'exports', funcname: m[1] });
+    } else {
+      throw new Error('Zeile ' + (idx + 1) + ' nicht erkannt: "' + line + '"');
+    }
+  }
+
+  if (blocks.length === 0) throw new Error('Kein Code zum Übernehmen gefunden.');
+  return blocks;
+}
+
+function applyJsToBlocks() {
+  document.getElementById('errorbanner').style.display = 'none';
+  var code = document.getElementById('jsCodeArea').value;
+  try {
+    var blocks = _parseJsToBlocks(code);
+    var xmlString = _blocksToXml(blocks);
+    var dom = new DOMParser().parseFromString(xmlString, 'text/xml');
+    demoWorkspace.clear();
+    Blockly.Xml.domToWorkspace(dom.documentElement, demoWorkspace);
+    document.getElementById('jsViewDiv').style.display = 'none';
+    document.getElementById('blocklyDiv').style.display = 'block';
+  } catch (e) {
+    document.getElementById('errorbanner').style.display = 'block';
+    document.getElementById('errorbanner').textContent = 'Konnte JavaScript nicht in Blöcke übersetzen: ' + e.message;
+    console.error(e);
+  }
 }
 
 // ── Save workspace as JSON (Blockly v12 native format) ────────────
