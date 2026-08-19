@@ -66,7 +66,7 @@ Das Beste daran: Du kannst im Browser sofort eine **3D-Vorschau** sehen, bevor d
 | **JavaScript ↓** | Lädt den fertigen JavaScript-Code herunter (inkl. Funktionsaufruf & „Done!"-Meldung) |
 | **🧩 Blöcke** / **{ } JavaScript** | Wechselt zwischen dem Blöcke-Editor und einer Textansicht des daraus erzeugten JavaScript-Codes |
 
-> **Blöcke ↔ JavaScript:** Klicke **{ } JavaScript**, um den aktuellen Code zu sehen. Du kannst ihn dort auch bearbeiten — mit **✅ In Blöcke übernehmen** wird er zurück in Blöcke verwandelt. Das funktioniert aber nur für Code, der genau dem Muster entspricht, das die Blöcke selbst erzeugen (kein `for`, kein `let`, keine Variablen) — alles andere wird mit der betroffenen Zeile abgelehnt, statt falsch geraten zu werden.
+> **Blöcke ↔ JavaScript:** Klicke **{ } JavaScript**, um den aktuellen Code zu sehen. Du kannst ihn dort auch bearbeiten — mit **✅ In Blöcke übernehmen** wird er zurück in Blöcke verwandelt. Das funktioniert für Code, der genau dem Muster entspricht, das die Blöcke selbst erzeugen — inklusive `wiederhole ... mal`-Schleifen (auch verschachtelt), Variablen (lesen, setzen, "ändern um"), `if`/`else`, Vergleiche, `&&`/`||`/`!` und `+ - * /`-Rechnungen, jeweils mit korrekter Klammerung. Andere Schleifenformen (`while`, freie `for`-Schleifen), Text/Listen, Funktionen mit Parametern und beliebiger JavaScript-Code werden mit der betroffenen Zeile abgelehnt, statt falsch geraten zu werden.
 
 ---
 

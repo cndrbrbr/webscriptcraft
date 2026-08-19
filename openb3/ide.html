@@ -338,53 +338,236 @@ function showBlocksView() {
 }
 
 // ── JavaScript → Blocks: best-effort parser for the JSMN vocabulary ─
-// Understands exactly the patterns the JSMN block generators emit
-// (function wrapper, drone.box/box0/movement calls, function calls).
-// Anything outside that vocabulary — loops, variables, arithmetic,
-// arbitrary JS — is rejected with the offending line number rather
-// than silently dropped or guessed at. This is deliberate: a general
+// Understands exactly the patterns the JSMN block generators emit: the
+// function wrapper, drone.box/box0/movement calls, function calls,
+// "wiederhole ... mal" repeat loops (nested or sibling), variables
+// (get/set/"change by"), if/else, comparisons, &&/||/!, and +-*/
+// arithmetic — i.e. most of what the Blockly toolbox's Logic/Math/
+// Variables categories generate. Anything outside that vocabulary —
+// while/for/forEach loops, strings, lists, procedures with parameters,
+// arbitrary JS — is rejected with the offending line number rather than
+// silently dropped or guessed at. This is deliberate: a general
 // JS-to-Blockly parser isn't realistic, but JSMN's own limited output
-// grammar is small enough to round-trip reliably.
+// grammar (plus the standard Blockly blocks layered on top of it) is
+// small enough to round-trip reliably.
 function _escXml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function _blocksToXml(blocks) {
-  var opens = blocks.map(function(b) {
-    if (b.type === 'funcbegin') {
-      return '<block type="funcbegin"><field name="funcname">' + _escXml(b.funcname) + '</field>';
-    }
-    if (b.type === 'funcend') {
-      return '<block type="funcend">';
-    }
-    if (b.type === 'boxcmd') {
-      return '<block type="boxcmd">'
-           + '<field name="NAME">' + _escXml(b.mat) + '</field>'
-           + '<field name="width">' + b.width + '</field>'
-           + '<field name="height">' + b.height + '</field>'
-           + '<field name="depth">' + b.depth + '</field>';
-    }
-    if (b.type === 'box0') {
-      return '<block type="box0">'
-           + '<field name="Boxtype">' + _escXml(b.boxtype) + '</field>'
-           + '<field name="NAME">' + _escXml(b.mat) + '</field>'
-           + '<value name="X"><block type="math_number"><field name="NUM">' + b.w + '</field></block></value>'
-           + '<value name="Z"><block type="math_number"><field name="NUM">' + b.h + '</field></block></value>'
-           + '<value name="Y"><block type="math_number"><field name="NUM">' + b.d + '</field></block></value>';
-    }
-    if (b.type === 'move') {
-      return '<block type="move">'
-           + '<field name="wayto">' + _escXml(b.dir) + '</field>'
-           + '<field name="amount">' + b.amount + '</field>';
-    }
-    if (b.type === 'exports') {
-      return '<block type="exports"><field name="exportname">' + _escXml(b.funcname) + '</field>';
-    }
-    if (b.type === 'functioncall') {
-      return '<block type="functioncall"><field name="funcname">' + _escXml(b.funcname) + '</field>';
-    }
-  });
+// ── Expression parsing (JS → a value block) ──────────────────────────
+// Standard precedence-climbing recursive descent, low to high precedence:
+// || , && , comparison (==/!=/</<=/>/>=, non-chaining) , +/- , */ .
+// Parenthesization on the way back out (_valueToXml) follows the same
+// precedence, which is exactly what Blockly's own generator does — so a
+// round trip reproduces the same block structure it started from.
+var _EXPR_TOKEN_RE = /\s*(&&|\|\||==|!=|<=|>=|<|>|\+|-|\*|\/|!|\(|\)|true\b|false\b|\d+(?:\.\d+)?|[A-Za-z_]\w*)/g;
 
+function _tokenizeExpr(text) {
+  var tokens = [];
+  var re = new RegExp(_EXPR_TOKEN_RE.source, 'g');
+  var lastEnd = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index !== lastEnd) {
+      throw new Error('Ausdruck nicht erkannt: "' + text.slice(lastEnd, m.index) + '" in "' + text + '"');
+    }
+    tokens.push(m[1]);
+    lastEnd = re.lastIndex;
+  }
+  if (lastEnd !== text.length) {
+    throw new Error('Ausdruck nicht erkannt ab: "' + text.slice(lastEnd) + '" in "' + text + '"');
+  }
+  return tokens;
+}
+
+var _RE_NUMTOK = /^\d+(?:\.\d+)?$/;
+var _RE_IDTOK  = /^[A-Za-z_]\w*$/;
+
+function _parseExpr(text) {
+  var tokens = _tokenizeExpr(text);
+  var pos = 0;
+  function peek() { return tokens[pos]; }
+  function next() { return tokens[pos++]; }
+  function expect(tok) {
+    if (tokens[pos] !== tok) {
+      throw new Error('Erwartet "' + tok + '" in Ausdruck "' + text + '", gefunden "' + (tokens[pos] || '(Ende)') + '"');
+    }
+    pos++;
+  }
+  function parseUnary() {
+    var t = peek();
+    if (t === '-') {
+      next();
+      var numTok = next();
+      if (numTok === undefined || !_RE_NUMTOK.test(numTok)) {
+        throw new Error('Nur "-ZAHL" wird unterstützt (keine allgemeine Negation) in Ausdruck "' + text + '"');
+      }
+      return { vtype: 'number', value: '-' + numTok };
+    }
+    if (t === '!') {
+      next(); expect('(');
+      var inner = parseOr();
+      expect(')');
+      return { vtype: 'negate', a: inner };
+    }
+    if (t === '(') {
+      next();
+      var e = parseOr();
+      expect(')');
+      return e;
+    }
+    if (t === 'true' || t === 'false') {
+      next();
+      return { vtype: 'boolean', value: t === 'true' };
+    }
+    if (t !== undefined && _RE_NUMTOK.test(t)) {
+      next();
+      return { vtype: 'number', value: t };
+    }
+    if (t !== undefined && _RE_IDTOK.test(t)) {
+      next();
+      return { vtype: 'var', name: t };
+    }
+    throw new Error('Unerwartetes Token "' + (t || '(Ende)') + '" in Ausdruck "' + text + '"');
+  }
+  function parseMul() {
+    var left = parseUnary();
+    while (peek() === '*' || peek() === '/') {
+      var op = next();
+      left = { vtype: 'arith', op: op === '*' ? 'MULTIPLY' : 'DIVIDE', a: left, b: parseUnary() };
+    }
+    return left;
+  }
+  function parseAdd() {
+    var left = parseMul();
+    while (peek() === '+' || peek() === '-') {
+      var op = next();
+      left = { vtype: 'arith', op: op === '+' ? 'ADD' : 'MINUS', a: left, b: parseMul() };
+    }
+    return left;
+  }
+  var _CMP_OPS = { '==': 'EQ', '!=': 'NEQ', '<=': 'LTE', '>=': 'GTE', '<': 'LT', '>': 'GT' };
+  function parseCompare() {
+    var left = parseAdd();
+    var t = peek();
+    if (_CMP_OPS.hasOwnProperty(t)) {
+      next();
+      return { vtype: 'compare', op: _CMP_OPS[t], a: left, b: parseAdd() };
+    }
+    return left;
+  }
+  function parseAnd() {
+    var left = parseCompare();
+    while (peek() === '&&') {
+      next();
+      left = { vtype: 'logic', op: 'AND', a: left, b: parseCompare() };
+    }
+    return left;
+  }
+  function parseOr() {
+    var left = parseAnd();
+    while (peek() === '||') {
+      next();
+      left = { vtype: 'logic', op: 'OR', a: left, b: parseAnd() };
+    }
+    return left;
+  }
+  var result = parseOr();
+  if (pos !== tokens.length) {
+    throw new Error('Unerwartetes Token "' + tokens[pos] + '" am Ende von Ausdruck "' + text + '"');
+  }
+  return result;
+}
+
+function _valueToXml(node) {
+  if (node.vtype === 'number') {
+    return '<block type="math_number"><field name="NUM">' + node.value + '</field></block>';
+  }
+  if (node.vtype === 'boolean') {
+    return '<block type="logic_boolean"><field name="BOOL">' + (node.value ? 'TRUE' : 'FALSE') + '</field></block>';
+  }
+  if (node.vtype === 'var') {
+    return '<block type="variables_get"><field name="VAR">' + _escXml(node.name) + '</field></block>';
+  }
+  if (node.vtype === 'arith') {
+    return '<block type="math_arithmetic"><field name="OP">' + node.op + '</field>'
+         + '<value name="A">' + _valueToXml(node.a) + '</value>'
+         + '<value name="B">' + _valueToXml(node.b) + '</value></block>';
+  }
+  if (node.vtype === 'compare') {
+    return '<block type="logic_compare"><field name="OP">' + node.op + '</field>'
+         + '<value name="A">' + _valueToXml(node.a) + '</value>'
+         + '<value name="B">' + _valueToXml(node.b) + '</value></block>';
+  }
+  if (node.vtype === 'logic') {
+    return '<block type="logic_operation"><field name="OP">' + node.op + '</field>'
+         + '<value name="A">' + _valueToXml(node.a) + '</value>'
+         + '<value name="B">' + _valueToXml(node.b) + '</value></block>';
+  }
+  if (node.vtype === 'negate') {
+    return '<block type="logic_negate"><value name="BOOL">' + _valueToXml(node.a) + '</value></block>';
+  }
+  throw new Error('Unbekannter Ausdruckstyp: ' + node.vtype);
+}
+
+function _blockToXmlOpen(b) {
+  if (b.type === 'funcbegin') {
+    return '<block type="funcbegin"><field name="funcname">' + _escXml(b.funcname) + '</field>';
+  }
+  if (b.type === 'funcend') {
+    return '<block type="funcend">';
+  }
+  if (b.type === 'boxcmd') {
+    return '<block type="boxcmd">'
+         + '<field name="NAME">' + _escXml(b.mat) + '</field>'
+         + '<field name="width">' + b.width + '</field>'
+         + '<field name="height">' + b.height + '</field>'
+         + '<field name="depth">' + b.depth + '</field>';
+  }
+  if (b.type === 'box0') {
+    return '<block type="box0">'
+         + '<field name="Boxtype">' + _escXml(b.boxtype) + '</field>'
+         + '<field name="NAME">' + _escXml(b.mat) + '</field>'
+         + '<value name="X"><block type="math_number"><field name="NUM">' + b.w + '</field></block></value>'
+         + '<value name="Z"><block type="math_number"><field name="NUM">' + b.h + '</field></block></value>'
+         + '<value name="Y"><block type="math_number"><field name="NUM">' + b.d + '</field></block></value>';
+  }
+  if (b.type === 'move') {
+    return '<block type="move">'
+         + '<field name="wayto">' + _escXml(b.dir) + '</field>'
+         + '<field name="amount">' + b.amount + '</field>';
+  }
+  if (b.type === 'exports') {
+    return '<block type="exports"><field name="exportname">' + _escXml(b.funcname) + '</field>';
+  }
+  if (b.type === 'functioncall') {
+    return '<block type="functioncall"><field name="funcname">' + _escXml(b.funcname) + '</field>';
+  }
+  if (b.type === 'repeat') {
+    return '<block type="controls_repeat_ext">'
+         + '<value name="TIMES">' + _valueToXml(b.timesNode) + '</value>'
+         + '<statement name="DO">' + _blocksToXmlChain(b.body) + '</statement>';
+  }
+  if (b.type === 'varset') {
+    return '<block type="variables_set"><field name="VAR">' + _escXml(b.name) + '</field>'
+         + '<value name="VALUE">' + _valueToXml(b.value) + '</value>';
+  }
+  if (b.type === 'varchange') {
+    return '<block type="math_change"><field name="VAR">' + _escXml(b.name) + '</field>'
+         + '<value name="DELTA">' + _valueToXml(b.delta) + '</value>';
+  }
+  if (b.type === 'if') {
+    var xml = '<block type="controls_if">';
+    if (b.elseBody) xml += '<mutation else="1"></mutation>';
+    xml += '<value name="IF0">' + _valueToXml(b.cond) + '</value>'
+         + '<statement name="DO0">' + _blocksToXmlChain(b.thenBody) + '</statement>';
+    if (b.elseBody) xml += '<statement name="ELSE">' + _blocksToXmlChain(b.elseBody) + '</statement>';
+    return xml;
+  }
+  throw new Error('Unbekannter Blocktyp: ' + b.type);
+}
+
+function _blocksToXmlChain(blocks) {
+  var opens = blocks.map(_blockToXmlOpen);
   var xml = '';
   for (var i = 0; i < opens.length; i++) {
     xml += opens[i];
@@ -394,50 +577,124 @@ function _blocksToXml(blocks) {
     xml += '</block>';
     if (j < opens.length - 1) xml += '</next>';
   }
-  return '<xml xmlns="https://developers.google.com/blockly/xml">' + xml + '</xml>';
+  return xml;
 }
 
-function _parseJsToBlocks(code) {
-  var lines = code.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+function _blocksToXml(blocks) {
+  return '<xml xmlns="https://developers.google.com/blockly/xml">' + _blocksToXmlChain(blocks) + '</xml>';
+}
+
+var _RE_FUNCBEGIN   = /^function\s+(\w+)\s*\(\)\s*\{$/;
+var _RE_FUNCEND     = /^\};$/;                    // function end always carries the semicolon
+var _RE_LOOPEND     = /^\}$/;                     // a loop/if body's closing brace never does
+var _RE_ELSE        = /^\}\s*else\s*\{$/;         // fused close-then-reopen for an else branch
+var _RE_REPEAT      = /^for\s*\(\s*var\s+(\w+)\s*=\s*0\s*;\s*\1\s*<\s*(\w+)\s*;\s*\1\+\+\s*\)\s*\{$/;
+var _RE_LOOPLIKE    = /^(while|for)\s*\(/;         // any other loop shape — give a clearer error
+var _RE_IF          = /^if\s*\((.+)\)\s*\{$/;
+var _RE_VARPREAMBLE = /^var\s+[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*\s*;$/; // hoisted "var a, b;"
+var _RE_VARCHANGE   = /^([A-Za-z_]\w*)\s*=\s*\(typeof\s+\1\s*===\s*'number'\s*\?\s*\1\s*:\s*0\)\s*\+\s*(.+);$/;
+var _RE_VARSET      = /^([A-Za-z_]\w*)\s*=\s*(.+);$/;
+var _RE_BOXCMD      = /^drone\.box\(\s*"([^"]*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;$/;
+var _RE_BOX0        = /^drone\.(box0|box)\(\s*"([^"]*)"\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
+var _RE_MOVE        = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*(-?\d+)\s*\)\s*;$/;
+var _RE_MOVE_FLR    = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
+var _RE_CALL        = /^(\w+)\(\)\s*;$/;
+
+// Parses a flat run of statements starting at lines[idx]. Recurses for a
+// repeat loop's body or an if/else branch. insideBlock says whether a bare
+// "}" here legitimately closes an enclosing loop/if (recursive call) or is
+// a stray/unmatched bracket (top-level call). allowElse additionally lets
+// a fused "} else {" close this call instead of a bare "}" — only true
+// while parsing an if's "then" body, since there's no elseif chaining
+// here. insideFunction is threaded through recursion so a call inside a
+// loop/if inside a function still resolves to 'functioncall', not
+// 'exports'.
+function _parseSequence(lines, idx, insideBlock, allowElse, insideFunction) {
   var blocks = [];
-  var insideFunction = false;
-
-  var RE_FUNCBEGIN = /^function\s+(\w+)\s*\(\)\s*\{$/;
-  var RE_FUNCEND   = /^\};?$/;
-  var RE_BOXCMD    = /^drone\.box\(\s*"([^"]*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;$/;
-  var RE_BOX0      = /^drone\.(box0|box)\(\s*"([^"]*)"\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*,\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
-  var RE_MOVE      = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*(-?\d+)\s*\)\s*;$/;
-  var RE_MOVE_FLR  = /^drone\.(up|down|fwd|back|left|right|turn)\(\s*Math\.floor\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)\s*;$/;
-  var RE_CALL      = /^(\w+)\(\)\s*;$/;
-
-  for (var idx = 0; idx < lines.length; idx++) {
+  while (idx < lines.length) {
     var line = lines[idx], m;
-    if ((m = line.match(RE_FUNCBEGIN))) {
+    if (allowElse && _RE_ELSE.test(line)) {
+      return { blocks: blocks, nextIdx: idx, insideFunction: insideFunction, hitElse: true };
+    }
+    if (_RE_LOOPEND.test(line)) {
+      if (!insideBlock) {
+        throw new Error('Zeile ' + (idx + 1) + ': unerwartete schließende Klammer "}".');
+      }
+      return { blocks: blocks, nextIdx: idx, insideFunction: insideFunction, hitElse: false };
+    }
+    if ((m = line.match(_RE_FUNCBEGIN))) {
       blocks.push({ type: 'funcbegin', funcname: m[1] });
       insideFunction = true;
-    } else if (RE_FUNCEND.test(line)) {
+    } else if (_RE_FUNCEND.test(line)) {
       blocks.push({ type: 'funcend' });
       insideFunction = false;
-    } else if ((m = line.match(RE_BOXCMD))) {
+    } else if (_RE_VARPREAMBLE.test(line)) {
+      // hoisted "var a, b;" declarations — no block for these; Blockly
+      // auto-creates a variable from a bare field reference on load, so
+      // there's nothing to record here.
+    } else if ((m = line.match(_RE_REPEAT))) {
+      var loopBody = _parseSequence(lines, idx + 1, true, false, insideFunction);
+      if (loopBody.nextIdx >= lines.length) {
+        throw new Error('Zeile ' + (idx + 1) + ': "wiederhole"-Schleife wird nicht geschlossen.');
+      }
+      blocks.push({ type: 'repeat', timesNode: _parseExpr(m[2]), body: loopBody.blocks });
+      idx = loopBody.nextIdx; // sits on the loop's closing '}'; consumed by idx++ below
+    } else if (_RE_LOOPLIKE.test(line)) {
+      throw new Error('Zeile ' + (idx + 1) + ': diese Schleifenform wird beim Zurückwandeln nicht ' +
+                       'unterstützt (nur "wiederhole ... mal" / for-Zählschleife von 0 an) — "' + line + '"');
+    } else if ((m = line.match(_RE_IF))) {
+      var thenPart = _parseSequence(lines, idx + 1, true, true, insideFunction);
+      if (thenPart.nextIdx >= lines.length) {
+        throw new Error('Zeile ' + (idx + 1) + ': "if" wird nicht geschlossen.');
+      }
+      var elseBody = null, afterIdx;
+      if (thenPart.hitElse) {
+        var elsePart = _parseSequence(lines, thenPart.nextIdx + 1, true, false, thenPart.insideFunction);
+        if (elsePart.nextIdx >= lines.length) {
+          throw new Error('Zeile ' + (idx + 1) + ': "else" wird nicht geschlossen.');
+        }
+        elseBody = elsePart.blocks;
+        afterIdx = elsePart.nextIdx;
+        insideFunction = elsePart.insideFunction;
+      } else {
+        afterIdx = thenPart.nextIdx;
+        insideFunction = thenPart.insideFunction;
+      }
+      blocks.push({ type: 'if', cond: _parseExpr(m[1]), thenBody: thenPart.blocks, elseBody: elseBody });
+      idx = afterIdx; // sits on the closing '}'; consumed by idx++ below
+    } else if ((m = line.match(_RE_VARCHANGE))) {
+      blocks.push({ type: 'varchange', name: m[1], delta: _parseExpr(m[2]) });
+    } else if ((m = line.match(_RE_VARSET))) {
+      blocks.push({ type: 'varset', name: m[1], value: _parseExpr(m[2]) });
+    } else if ((m = line.match(_RE_BOXCMD))) {
       blocks.push({ type: 'boxcmd', mat: m[1], width: m[2], height: m[3], depth: m[4] });
-    } else if ((m = line.match(RE_BOX0))) {
+    } else if ((m = line.match(_RE_BOX0))) {
       blocks.push({
         type: 'box0', boxtype: m[1], mat: m[2],
         w: Math.floor(parseFloat(m[3])), h: Math.floor(parseFloat(m[4])), d: Math.floor(parseFloat(m[5]))
       });
-    } else if ((m = line.match(RE_MOVE))) {
+    } else if ((m = line.match(_RE_MOVE))) {
       blocks.push({ type: 'move', dir: m[1], amount: m[2] });
-    } else if ((m = line.match(RE_MOVE_FLR))) {
+    } else if ((m = line.match(_RE_MOVE_FLR))) {
       blocks.push({ type: 'move', dir: m[1], amount: String(Math.floor(parseFloat(m[2]))) });
-    } else if ((m = line.match(RE_CALL))) {
+    } else if ((m = line.match(_RE_CALL))) {
       blocks.push({ type: insideFunction ? 'functioncall' : 'exports', funcname: m[1] });
     } else {
       throw new Error('Zeile ' + (idx + 1) + ' nicht erkannt: "' + line + '"');
     }
+    idx++;
   }
+  return { blocks: blocks, nextIdx: idx, insideFunction: insideFunction, hitElse: false };
+}
 
-  if (blocks.length === 0) throw new Error('Kein Code zum Übernehmen gefunden.');
-  return blocks;
+function _parseJsToBlocks(code) {
+  var lines = code.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+  var result = _parseSequence(lines, 0, false, false, false);
+  if (result.nextIdx < lines.length) {
+    throw new Error('Zeile ' + (result.nextIdx + 1) + ': unerwartete schließende Klammer "}".');
+  }
+  if (result.blocks.length === 0) throw new Error('Kein Code zum Übernehmen gefunden.');
+  return result.blocks;
 }
 
 function applyJsToBlocks() {

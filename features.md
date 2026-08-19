@@ -35,8 +35,12 @@ What JSMN IDE (webscriptcraft) does today, and what's realistically next. See [R
 
 ### JavaScript → Blocks (best-effort) *(new)*
 - The JS view is editable; an **✅ In Blöcke übernehmen** button parses it back into blocks
-- Understands exactly the JSMN vocabulary the generators themselves emit: the function wrapper, `drone.box`/`drone.box0`/movement calls, and function calls — including telling apart a `functioncall` from an `exports` block by whether the bare `name();` line sits inside or outside a function body
-- Anything outside that vocabulary — loops, variables, arithmetic expressions, arbitrary JavaScript — is rejected with the exact line number rather than silently dropped or guessed at. This is a deliberate scope boundary: a general JavaScript-to-Blockly translator isn't realistic, but JSMN's own limited output grammar is small enough to round-trip reliably.
+- Understands the JSMN vocabulary the generators themselves emit — the function wrapper, `drone.box`/`drone.box0`/movement calls, function calls (telling apart a `functioncall` from an `exports` block by whether the bare `name();` line sits inside or outside a function body) — plus most of what the Blockly toolbox's Loops/Logic/Math/Variables categories generate on top of it:
+  - `controls_repeat_ext` ("wiederhole ... mal") loops, recursively, so nested and sibling repeat loops round-trip too, with the repeat count itself a number or a variable
+  - variables: get, set, and "change by" (including Blockly's `(typeof X === 'number' ? X : 0) + delta` guard pattern)
+  - `if` and `if/else`, including nested inside loops or inside another `if`'s else-branch
+  - comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), logic `&&`/`||`/`!`, and `+ - * /` arithmetic — as full expressions with normal operator precedence, e.g. `i + 1 > 3` or `(i > 3 || j < 5) && i == 0` round-trip exactly, parentheses included only where precedence actually requires them
+- Anything outside that vocabulary — `while`/free-form `for`/`forEach` loops, general unary negation (only a literal `-NUMBER` is understood, not `-someVariable`), strings, lists, procedures with parameters, arbitrary JavaScript — is rejected with the exact line number rather than silently dropped or guessed at; an unsupported loop shape gets its own clearer message naming the boundary. This is a deliberate scope boundary: a general JavaScript-to-Blockly translator isn't realistic, but JSMN's own limited output grammar (plus the standard Blockly blocks layered on top) is small enough to round-trip reliably.
 
 ### Deployment
 - HTTPS dev server (`serve-https.py` + `setup-ssl.sh`) with a 10-year self-signed cert, recommended for classroom use
